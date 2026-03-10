@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비서 태스크 매니저</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f13;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d38;
+    --accent: #c8f060;
+    --accent2: #60b4f0;
+    --accent3: #f060b4;
+    --text: #e8eaf0;
+    --muted: #6b7080;
+    --red: #f06060;
+    --yellow: #f0c060;
+    --green: #60f0a0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--muted); font-style: italic; }
+  .header-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 300px 1fr 340px;
+    flex: 1;
+    height: calc(100vh - 61px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    overflow-y: auto;
+    background: var(--surface);
+  }
+  .sidebar-title {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .stat-card:hover::before, .stat-card.active::before { opacity: 1; }
+  .stat-card:hover { border-color: var(--accent); transform: translateX(3px); }
+  .stat-card.active { border-color: var(--accent); background: rgba(200,240,96,0.05); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .stat-num { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .stat-num.urgent { color: var(--red); }
+  .stat-num.today { color: var(--yellow); }
+  .stat-num.total { color: var(--accent); }
+  .stat-num.done { color: var(--green); }
+
+  .filter-section { margin-top: 24px; }
+  .filter-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 9px 14px;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: all 0.15s;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .filter-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .filter-btn.active { border-color: var(--accent2); background: rgba(96,180,240,0.08); color: var(--accent2); }
+  .filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* MAIN */
+  .main {
+    overflow-y: auto;
+    padding: 28px 28px;
+  }
+  .main-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .main-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--text);
+  }
+  .add-btn {
+    background: var(--accent);
+    color: #0e0f13;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .add-btn:hover { background: #d8ff70; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(200,240,96,0.3); }
+
+  /* TASK CARDS */
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+  .task-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .task-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 3px;
+    border-radius: 0 12px 12px 0;
+  }
+  .task-card.p-high::after { background: var(--red); }
+  .task-card.p-mid::after { background: var(--yellow); }
+  .task-card.p-low::after { background: var(--green); }
+  .task-card:hover { border-color: var(--border); background: var(--surface2); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .task-card.done { opacity: 0.4; }
+  .task-card.done .task-title { text-decoration: line-through; }
+
+  .task-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+  .task-check {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .task-check:hover { border-color: var(--accent); }
+  .task-check.checked { background: var(--accent); border-color: var(--accent); }
+  .task-check.checked::after { content: '✓'; font-size: 12px; color: #0e0f13; font-weight: 700; }
+  .task-title { font-size: 15px; font-weight: 500; flex: 1; line-height: 1.4; }
+  .task-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tag {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .tag-work { background: rgba(96,180,240,0.15); color: var(--accent2); }
+  .tag-personal { background: rgba(240,96,180,0.15); color: var(--accent3); }
+  .tag-study { background: rgba(200,240,96,0.15); color: var(--accent); }
+  .tag-other { background: rgba(107,112,128,0.2); color: var(--muted); }
+  .priority-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .p-high-badge { background: rgba(240,96,96,0.15); color: var(--red); }
+  .p-mid-badge { background: rgba(240,192,96,0.15); color: var(--yellow); }
+  .p-low-badge { background: rgba(96,240,160,0.15); color: var(--green); }
+  .due-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  .due-date.overdue { color: var(--red); }
+  .due-date.soon { color: var(--yellow); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 480px;
+    transform: translateY(20px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 22px;
+  }
+  .form-row { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+  .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+  .btn-save {
+    background: var(--accent);
+    color: #0e0f13;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 24px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn-save:hover { background: #d8ff70; }
+
+  /* AI PANEL */
+  .ai-panel {
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+  }
+  .ai-panel-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ai-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .ai-label { font-size: 14px; font-weight: 600; }
+  .ai-sublabel { font-size: 11px; color: var(--muted); }
+
+  .ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .msg {
+    max-width: 100%;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .msg-user {
+    background: rgba(200,240,96,0.1);
+    border: 1px solid rgba(200,240,96,0.2);
+    border-radius: 12px 12px 4px 12px;
+    padding: 10px 14px;
+    color: var(--accent);
+    align-self: flex-end;
+    max-width: 85%;
+  }
+  .msg-ai {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px 12px 12px 4px;
+    padding: 12px 14px;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+  .msg-ai .ai-thinking {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 12px;
+  }
+
+  .ai-input-area {
+    padding: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .ai-quick-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .quick-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .quick-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .ai-input-row { display: flex; gap: 8px; }
+  .ai-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .ai-input:focus { border-color: var(--accent); }
+  .ai-send {
+    background: var(--accent);
+    color: #0e0f13;
+    border: none;
+    border-radius: 10px;
+    width: 40px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ai-send:hover { background: #d8ff70; }
+  .ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* Delete btn */
+  .task-delete {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 2px;
+  }
+  .task-card:hover .task-delete { opacity: 1; }
+  .task-delete:hover { color: var(--red); }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">비서<span>desk</span></div>
+  <div class="header-date" id="headerDate"></div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Overview</div>
+    <div class="stat-card active" onclick="filterTasks('all', this)">
+      <div class="stat-label">전체 태스크</div>
+      <div class="stat-num total" id="statTotal">0</div>
+    </div>
+    <div class="stat-card" onclick="filterTasks('urgent', this)">
+      <div class="stat-label">🔴 긴급 (높은 우선순위)</div>
+      <div class="stat-num urgent" id="statUrgent">0</div>
+    </div>
+    <div class="stat-card" onclick="filterTasks('today', this)">
+      <div class="stat-label">📅 오늘 마감</div>
+      <div class="stat-num today" id="statToday">0</div>
+    </div>
+    <div class="stat-card" onclick="filterTasks('done', this)">
+      <div class="stat-label">✅ 완료</div>
+      <div class="stat-num done" id="statDone">0</div>
+    </div>
+
+    <div class="filter-section">
+      <div class="sidebar-title" style="margin-top:8px">카테고리</div>
+      <button class="filter-btn active" onclick="filterCategory('all', this)">
+        <span class="filter-dot" style="background:var(--muted)"></span> 전체
+      </button>
+      <button class="filter-btn" onclick="filterCategory('work', this)">
+        <span class="filter-dot" style="background:var(--accent2)"></span> 업무
+      </button>
+      <button class="filter-btn" onclick="filterCategory('personal', this)">
+        <span class="filter-dot" style="background:var(--accent3)"></span> 개인
+      </button>
+      <button class="filter-btn" onclick="filterCategory('study', this)">
+        <span class="filter-dot" style="background:var(--accent)"></span> 학습
+      </button>
+      <button class="filter-btn" onclick="filterCategory('other', this)">
+        <span class="filter-dot" style="background:var(--muted)"></span> 기타
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <h1 class="main-title" id="mainTitle">모든 태스크</h1>
+      <button class="add-btn" onclick="openModal()">
+        <span>＋</span> 태스크 추가
+      </button>
+    </div>
+    <div class="task-list" id="taskList"></div>
+  </main>
+
+  <!-- AI PANEL -->
+  <aside class="ai-panel">
+    <div class="ai-panel-header">
+      <div class="ai-icon">✦</div>
+      <div>
+        <div class="ai-label">AI 비서</div>
+        <div class="ai-sublabel">태스크에 대해 물어보세요</div>
+      </div>
+    </div>
+    <div class="ai-messages" id="aiMessages">
+      <div class="msg msg-ai">안녕하세요! 저는 AI 비서입니다 ✦
+
+태스크를 추가하고 나서 아래 버튼을 누르거나 질문을 입력해보세요.
+
+예시:
+• 오늘 할 일 알려줘
+• 우선순위 높은 태스크는?
+• 이번 주 마감 뭐야?</div>
+    </div>
+    <div class="ai-input-area">
+      <div class="ai-quick-btns">
+        <button class="quick-btn" onclick="quickAsk('오늘 할 일 알려줘')">오늘 할 일</button>
+        <button class="quick-btn" onclick="quickAsk('긴급한 태스크 알려줘')">긴급 태스크</button>
+        <button class="quick-btn" onclick="quickAsk('이번 주 마감 태스크 알려줘')">이번 주 마감</button>
+        <button class="quick-btn" onclick="quickAsk('전체 태스크 요약해줘')">전체 요약</button>
+      </div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="aiInput" placeholder="비서에게 물어보세요..." onkeydown="if(event.key==='Enter')sendToAI()">
+        <button class="ai-send" id="aiSendBtn" onclick="sendToAI()">↑</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitleText">새 태스크 추가</div>
+    <div class="form-row">
+      <div class="form-label">제목 *</div>
+      <input class="form-input" id="fTitle" placeholder="태스크 제목을 입력하세요">
+    </div>
+    <div class="form-row">
+      <div class="form-label">설명</div>
+      <textarea class="form-textarea" id="fDesc" placeholder="상세 내용 (선택)"></textarea>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-label">마감일</div>
+        <input class="form-input" id="fDate" type="date">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-label">마감 시간</div>
+        <input class="form-input" id="fTime" type="time">
+      </div>
+    </div>
+    <div class="form-row-2" style="margin-top:16px">
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-label">우선순위</div>
+        <select class="form-select" id="fPriority">
+          <option value="high">🔴 높음 (긴급)</option>
+          <option value="mid" selected>🟡 중간</option>
+          <option value="low">🟢 낮음</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <div class="form-label">카테고리</div>
+        <select class="form-select" id="fCategory">
+          <option value="work">💼 업무</option>
+          <option value="personal">🏠 개인</option>
+          <option value="study">📚 학습</option>
+          <option value="other">📌 기타</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveTask()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───
+let tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
+let currentFilter = 'all';
+let currentCategory = 'all';
+let editingId = null;
+
+const catLabel = { work: '업무', personal: '개인', study: '학습', other: '기타' };
+const priLabel = { high: '높음', mid: '중간', low: '낮음' };
+
+function saveTasks() { localStorage.setItem('biseo_tasks', JSON.stringify(tasks)); }
+
+// ─── DATE ───
+function updateDate() {
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('headerDate').textContent =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})`;
+}
+updateDate(); setInterval(updateDate, 60000);
+
+function toDateStr(d) { return d.toISOString().split('T')[0]; }
+function today() { return toDateStr(new Date()); }
+function isOverdue(task) { return task.date && !task.done && task.date < today(); }
+function isTodayDue(task) { return task.date && task.date === today() && !task.done; }
+function isThisWeek(task) {
+  if (!task.date || task.done) return false;
+  const d = new Date(task.date);
+  const now = new Date();
+  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
+  return d >= now && d <= weekEnd;
+}
+
+// ─── RENDER ───
+function updateStats() {
+  const active = tasks.filter(t => !t.done);
+  document.getElementById('statTotal').textContent = tasks.filter(t=>!t.done).length;
+  document.getElementById('statUrgent').textContent = active.filter(t=>t.priority==='high').length;
+  document.getElementById('statToday').textContent = active.filter(isTodayDue).length;
+  document.getElementById('statDone').textContent = tasks.filter(t=>t.done).length;
+}
+
+function renderTasks() {
+  updateStats();
+  let filtered = [...tasks];
+
+  if (currentFilter === 'urgent') filtered = filtered.filter(t => t.priority === 'high' && !t.done);
+  else if (currentFilter === 'today') filtered = filtered.filter(isTodayDue);
+  else if (currentFilter === 'done') filtered = filtered.filter(t => t.done);
+
+  if (currentCategory !== 'all') filtered = filtered.filter(t => t.category === currentCategory);
+
+  // Sort: done last, then by priority, then date
+  const priOrder = { high: 0, mid: 1, low: 2 };
+  filtered.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (a.priority !== b.priority) return priOrder[a.priority] - priOrder[b.priority];
+    if (a.date && b.date) return a.date.localeCompare(b.date);
+    return 0;
+  });
+
+  const list = document.getElementById('taskList');
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>태스크가 없습니다.<br>오른쪽 상단 버튼으로 추가해보세요.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(t => {
+    const over = isOverdue(t);
+    const soon = isTodayDue(t);
+    const dueCls = over ? 'overdue' : (soon ? 'soon' : '');
+    const dateStr = t.date ? `${t.date}${t.time ? ' '+t.time : ''}` : '';
+    const dueLabel = over ? `⚠ ${dateStr}` : dateStr;
+
+    return `<div class="task-card p-${t.priority} ${t.done?'done':''}" id="tc-${t.id}">
+      <button class="task-delete" onclick="deleteTask('${t.id}',event)">✕</button>
+      <div class="task-top">
+        <div class="task-check ${t.done?'checked':''}" onclick="toggleDone('${t.id}')"></div>
+        <div class="task-title" onclick="openEditModal('${t.id}')">${t.title}</div>
+      </div>
+      ${t.desc ? `<div style="font-size:12px;color:var(--muted);margin:0 0 10px 32px;line-height:1.5">${t.desc}</div>` : ''}
+      <div class="task-meta" style="margin-left:32px">
+        <span class="tag tag-${t.category}">${catLabel[t.category]}</span>
+        <span class="priority-badge p-${t.priority}-badge">${priLabel[t.priority]}</span>
+        ${dateStr ? `<span class="due-date ${dueCls}">${dueLabel}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── FILTER ───
+function filterTasks(type, el) {
+  currentFilter = type;
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const titles = { all:'모든 태스크', urgent:'긴급 태스크', today:'오늘 마감', done:'완료된 태스크' };
+  document.getElementById('mainTitle').textContent = titles[type];
+  renderTasks();
+}
+
+function filterCategory(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+// ─── CRUD ───
+function toggleDone(id) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; saveTasks(); renderTasks(); }
+}
+
+function deleteTask(id, e) {
+  e.stopPropagation();
+  tasks = tasks.filter(t => t.id !== id);
+  saveTasks(); renderTasks();
+}
+
+function openModal() {
+  editingId = null;
+  document.getElementById('modalTitleText').textContent = '새 태스크 추가';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fDesc').value = '';
+  document.getElementById('fDate').value = today();
+  document.getElementById('fTime').value = '';
+  document.getElementById('fPriority').value = 'mid';
+  document.getElementById('fCategory').value = 'work';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 100);
+}
+
+function openEditModal(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('modalTitleText').textContent = '태스크 수정';
+  document.getElementById('fTitle').value = t.title;
+  document.getElementById('fDesc').value = t.desc || '';
+  document.getElementById('fDate').value = t.date || '';
+  document.getElementById('fTime').value = t.time || '';
+  document.getElementById('fPriority').value = t.priority;
+  document.getElementById('fCategory').value = t.category;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+function saveTask() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { document.getElementById('fTitle').style.borderColor='var(--red)'; return; }
+  document.getElementById('fTitle').style.borderColor='';
+
+  const task = {
+    id: editingId || Date.now().toString(),
+    title,
+    desc: document.getElementById('fDesc').value.trim(),
+    date: document.getElementById('fDate').value,
+    time: document.getElementById('fTime').value,
+    priority: document.getElementById('fPriority').value,
+    category: document.getElementById('fCategory').value,
+    done: false,
+    createdAt: new Date().toISOString()
+  };
+
+  if (editingId) {
+    const idx = tasks.findIndex(t => t.id === editingId);
+    task.done = tasks[idx].done;
+    tasks[idx] = task;
+  } else {
+    tasks.unshift(task);
+  }
+
+  saveTasks(); closeModal(); renderTasks();
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── AI ───
+function buildTaskContext() {
+  const now = new Date();
+  const todayStr = today();
+  const active = tasks.filter(t => !t.done);
+  
+  if (tasks.length === 0) return '현재 등록된 태스크가 없습니다.';
+
+  const lines = [`현재 날짜: ${todayStr}`, `\n=== 태스크 목록 (총 ${tasks.length}개, 미완료 ${active.length}개) ===\n`];
+  
+  tasks.forEach((t, i) => {
+    const status = t.done ? '[완료]' : isOverdue(t) ? '[지연]' : isTodayDue(t) ? '[오늘마감]' : '[진행중]';
+    const due = t.date ? ` | 마감: ${t.date}${t.time?' '+t.time:''}` : '';
+    lines.push(`${i+1}. ${status} ${t.title}`);
+    lines.push(`   카테고리: ${catLabel[t.category]} | 우선순위: ${priLabel[t.priority]}${due}`);
+    if (t.desc) lines.push(`   설명: ${t.desc}`);
+  });
+
+  return lines.join('\n');
+}
+
+async function sendToAI(customMsg) {
+  const input = document.getElementById('aiInput');
+  const msg = customMsg || input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  const btn = document.getElementById('aiSendBtn');
+  btn.disabled = true;
+
+  const messagesEl = document.getElementById('aiMessages');
+
+  // User msg
+  messagesEl.innerHTML += `<div class="msg msg-user">${msg}</div>`;
+
+  // Thinking
+  const thinkingId = 'thinking-' + Date.now();
+  messagesEl.innerHTML += `<div class="msg msg-ai" id="${thinkingId}"><span class="ai-thinking">✦ 분석 중...</span></div>`;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  const taskContext = buildTaskContext();
+  const systemPrompt = `당신은 사용자의 업무를 도와주는 유능한 AI 비서입니다. 
+사용자의 태스크 목록을 분석하고 명확하고 실용적으로 대답하세요.
+답변은 한국어로, 간결하고 구조적으로 작성하세요.
+오늘 날짜를 기준으로 마감일과 우선순위를 고려해서 중요한 것부터 알려주세요.`;
+
+  const userMessage = `[태스크 현황]\n${taskContext}\n\n[질문]\n${msg}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || '응답을 받을 수 없습니다.';
+    document.getElementById(thinkingId).textContent = reply;
+  } catch (err) {
+    document.getElementById(thinkingId).innerHTML = `<span style="color:var(--red)">오류가 발생했습니다. 다시 시도해주세요.</span>`;
+  }
+
+  btn.disabled = false;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function quickAsk(q) {
+  document.getElementById('aiInput').value = q;
+  sendToAI(q);
+}
+
+// ─── INIT ───
+// Demo tasks
+if (tasks.length === 0) {
+  tasks = [
+    { id: '1', title: '분기 보고서 작성', desc: 'Q1 실적 정리 및 PPT 완성', date: today(), time: '18:00', priority: 'high', category: 'work', done: false, createdAt: new Date().toISOString() },
+    { id: '2', title: '팀 주간 회의 준비', desc: '아젠다 정리 및 자료 배포', date: today(), time: '14:00', priority: 'mid', category: 'work', done: false, createdAt: new Date().toISOString() },
+    { id: '3', title: '독서 30분', desc: '현재 읽는 책 계속 읽기', date: today(), time: '', priority: 'low', category: 'personal', done: false, createdAt: new Date().toISOString() },
+    { id: '4', title: '클라이언트 이메일 답변', desc: '계약 관련 문의 처리', date: (() => { const d = new Date(); d.setDate(d.getDate()+1); return toDateStr(d); })(), time: '12:00', priority: 'high', category: 'work', done: false, createdAt: new Date().toISOString() },
+    { id: '5', title: '헬스장 등록', desc: '', date: (() => { const d = new Date(); d.setDate(d.getDate()+3); return toDateStr(d); })(), time: '', priority: 'low', category: 'personal', done: true, createdAt: new Date().toISOString() },
+  ];
+  saveTasks();
+}
+
+renderTasks();
+</script>
+</body>
+</html>
