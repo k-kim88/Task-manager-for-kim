@@ -447,7 +447,10 @@
 
 <header>
   <div class="logo">비서<span>desk</span></div>
-  <div class="header-date" id="headerDate"></div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <span id="syncStatus" style="font-size:12px;color:var(--muted);font-family:JetBrains Mono,monospace">⟳ 불러오는 중...</span>
+    <div class="header-date" id="headerDate"></div>
+  </div>
 </header>
 
 <div class="layout">
@@ -586,15 +589,46 @@
 
 <script>
 // ─── STATE ───
-let tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
+const SHEET_URL = 'https://script.google.com/a/macros/fancsglobal.com/s/AKfycbz_LtF0fMQAm9GHW52jZ0QA7bag0WQ8l_rjHQmo0urMkQ-1VETKTVlooOY5eoeJyMHv0g/exec';
+let tasks = [];
 let currentFilter = 'all';
 let currentCategory = 'all';
 let editingId = null;
+let isSyncing = false;
 
 const catLabel = { work: '업무', personal: '개인', study: '학습', other: '기타' };
 const priLabel = { high: '높음', mid: '중간', low: '낮음' };
 
-function saveTasks() { localStorage.setItem('biseo_tasks', JSON.stringify(tasks)); }
+function showSyncStatus(msg, color='var(--muted)') {
+  const el = document.getElementById('syncStatus');
+  if (el) { el.textContent = msg; el.style.color = color; }
+}
+
+async function loadTasks() {
+  showSyncStatus('⟳ 불러오는 중...', 'var(--accent2)');
+  try {
+    const res = await fetch(SHEET_URL + '?action=getTasks');
+    const data = await res.json();
+    tasks = data.tasks || [];
+    showSyncStatus('✓ 동기화됨', 'var(--green)');
+  } catch(e) {
+    tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
+    showSyncStatus('⚠ 오프라인 모드', 'var(--yellow)');
+  }
+  renderTasks();
+}
+
+async function saveTasks() {
+  localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
+  showSyncStatus('⟳ 저장 중...', 'var(--accent2)');
+  try {
+    const params = new URLSearchParams({ action: 'saveTasks', tasks: JSON.stringify(tasks) });
+    await fetch(SHEET_URL + '?' + params.toString());
+    showSyncStatus('✓ 동기화됨', 'var(--green)');
+  } catch(e) {
+    showSyncStatus('⚠ 로컬 저장됨', 'var(--yellow)');
+  }
+}
 
 // ─── DATE ───
 function updateDate() {
@@ -841,19 +875,7 @@ function quickAsk(q) {
 }
 
 // ─── INIT ───
-// Demo tasks
-if (tasks.length === 0) {
-  tasks = [
-    { id: '1', title: '분기 보고서 작성', desc: 'Q1 실적 정리 및 PPT 완성', date: today(), time: '18:00', priority: 'high', category: 'work', done: false, createdAt: new Date().toISOString() },
-    { id: '2', title: '팀 주간 회의 준비', desc: '아젠다 정리 및 자료 배포', date: today(), time: '14:00', priority: 'mid', category: 'work', done: false, createdAt: new Date().toISOString() },
-    { id: '3', title: '독서 30분', desc: '현재 읽는 책 계속 읽기', date: today(), time: '', priority: 'low', category: 'personal', done: false, createdAt: new Date().toISOString() },
-    { id: '4', title: '클라이언트 이메일 답변', desc: '계약 관련 문의 처리', date: (() => { const d = new Date(); d.setDate(d.getDate()+1); return toDateStr(d); })(), time: '12:00', priority: 'high', category: 'work', done: false, createdAt: new Date().toISOString() },
-    { id: '5', title: '헬스장 등록', desc: '', date: (() => { const d = new Date(); d.setDate(d.getDate()+3); return toDateStr(d); })(), time: '', priority: 'low', category: 'personal', done: true, createdAt: new Date().toISOString() },
-  ];
-  saveTasks();
-}
-
-renderTasks();
+loadTasks();
 </script>
 </body>
 </html>
