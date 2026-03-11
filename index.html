@@ -58,7 +58,7 @@
   /* LAYOUT */
   .layout {
     display: grid;
-    grid-template-columns: 300px 1fr 340px;
+    grid-template-columns: 300px 1fr;
     flex: 1;
     height: calc(100vh - 61px);
   }
@@ -442,6 +442,33 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
+  /* SEARCH */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    transition: border-color 0.15s;
+  }
+  .search-bar:focus-within { border-color: var(--accent); }
+  .search-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .search-bar input::placeholder { color: var(--muted); }
+  .search-icon { color: var(--muted); font-size: 16px; }
+  .search-count { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+  .highlight { background: rgba(200,240,96,0.3); border-radius: 3px; padding: 0 2px; }
+
   /* ── MOBILE ── */
   @media (max-width: 768px) {
     header { padding: 14px 16px; }
@@ -569,41 +596,15 @@
         <span>＋</span> 태스크 추가
       </button>
     </div>
+    <div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input id="searchInput" placeholder="제목, 설명, 카테고리로 검색..." oninput="onSearch()">
+      <span class="search-count" id="searchCount"></span>
+    </div>
     <div class="task-list" id="taskList"></div>
   </main>
 
-  <!-- AI PANEL -->
-  <aside class="ai-panel">
-    <div class="ai-panel-header">
-      <div class="ai-icon">✦</div>
-      <div>
-        <div class="ai-label">AI 비서</div>
-        <div class="ai-sublabel">태스크에 대해 물어보세요</div>
-      </div>
-    </div>
-    <div class="ai-messages" id="aiMessages">
-      <div class="msg msg-ai">안녕하세요! 저는 AI 비서입니다 ✦
-
-태스크를 추가하고 나서 아래 버튼을 누르거나 질문을 입력해보세요.
-
-예시:
-• 오늘 할 일 알려줘
-• 우선순위 높은 태스크는?
-• 이번 주 마감 뭐야?</div>
-    </div>
-    <div class="ai-input-area">
-      <div class="ai-quick-btns">
-        <button class="quick-btn" onclick="quickAsk('오늘 할 일 알려줘')">오늘 할 일</button>
-        <button class="quick-btn" onclick="quickAsk('긴급한 태스크 알려줘')">긴급 태스크</button>
-        <button class="quick-btn" onclick="quickAsk('이번 주 마감 태스크 알려줘')">이번 주 마감</button>
-        <button class="quick-btn" onclick="quickAsk('전체 태스크 요약해줘')">전체 요약</button>
-      </div>
-      <div class="ai-input-row">
-        <input class="ai-input" id="aiInput" placeholder="비서에게 물어보세요..." onkeydown="if(event.key==='Enter')sendToAI()">
-        <button class="ai-send" id="aiSendBtn" onclick="sendToAI()">↑</button>
-      </div>
-    </div>
-  </aside>
+  <!-- AI PANEL REMOVED -->
 </div>
 
 <!-- MOBILE NAV -->
@@ -612,10 +613,10 @@
     <span class="nav-icon">📋</span>태스크
   </button>
   <button class="mobile-nav-btn" id="navFilter" onclick="mobileTab('filter')">
-    <span class="nav-icon">🔍</span>필터
+    <span class="nav-icon">☰</span>필터
   </button>
-  <button class="mobile-nav-btn" id="navAI" onclick="mobileTab('ai')">
-    <span class="nav-icon">✦</span>AI비서
+  <button class="mobile-nav-btn" id="navAdd" onclick="openModal()">
+    <span class="nav-icon">＋</span>추가
   </button>
 </nav>
 
@@ -765,20 +766,35 @@ function renderTasks() {
     return;
   }
 
+  // Apply search filter
+  if (searchQuery) {
+    filtered = filtered.filter(t =>
+      t.title.toLowerCase().includes(searchQuery) ||
+      (t.desc && t.desc.toLowerCase().includes(searchQuery)) ||
+      catLabel[t.category].toLowerCase().includes(searchQuery) ||
+      priLabel[t.priority].toLowerCase().includes(searchQuery)
+    );
+  }
+
+  // Update search count
+  const countEl = document.getElementById('searchCount');
+  if (countEl) countEl.textContent = searchQuery ? `${filtered.length}건` : '';
+
   list.innerHTML = filtered.map(t => {
     const over = isOverdue(t);
     const soon = isTodayDue(t);
     const dueCls = over ? 'overdue' : (soon ? 'soon' : '');
     const dateStr = t.date ? `${t.date}${t.time ? ' '+t.time : ''}` : '';
     const dueLabel = over ? `⚠ ${dateStr}` : dateStr;
+    const q = searchQuery;
 
     return `<div class="task-card p-${t.priority} ${t.done?'done':''}" id="tc-${t.id}">
       <button class="task-delete" onclick="deleteTask('${t.id}',event)">✕</button>
       <div class="task-top">
         <div class="task-check ${t.done?'checked':''}" onclick="toggleDone('${t.id}')"></div>
-        <div class="task-title" onclick="openEditModal('${t.id}')">${t.title}</div>
+        <div class="task-title" onclick="openEditModal('${t.id}')">${highlight(t.title, q)}</div>
       </div>
-      ${t.desc ? `<div style="font-size:12px;color:var(--muted);margin:0 0 10px 32px;line-height:1.5">${t.desc}</div>` : ''}
+      ${t.desc ? `<div style="font-size:12px;color:var(--muted);margin:0 0 10px 32px;line-height:1.5">${highlight(t.desc, q)}</div>` : ''}
       <div class="task-meta" style="margin-left:32px">
         <span class="tag tag-${t.category}">${catLabel[t.category]}</span>
         <span class="priority-badge p-${t.priority}-badge">${priLabel[t.priority]}</span>
@@ -954,15 +970,26 @@ function quickAsk(q) {
   sendToAI(q);
 }
 
+// ─── SEARCH ───
+let searchQuery = '';
+
+function onSearch() {
+  searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+  renderTasks();
+}
+
+function highlight(text, query) {
+  if (!query) return text;
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<span class="highlight">$1</span>');
+}
+
 // ─── MOBILE NAV ───
 function mobileTab(tab) {
   const sidebar = document.querySelector('.sidebar');
-  const aiPanel = document.querySelector('.ai-panel');
   const main = document.querySelector('.main');
 
   sidebar.classList.remove('mobile-open');
-  aiPanel.classList.remove('mobile-open');
-
   document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
 
   if (tab === 'main') {
@@ -972,10 +999,6 @@ function mobileTab(tab) {
     main.style.display = 'none';
     sidebar.classList.add('mobile-open');
     document.getElementById('navFilter').classList.add('active');
-  } else if (tab === 'ai') {
-    main.style.display = 'none';
-    aiPanel.classList.add('mobile-open');
-    document.getElementById('navAI').classList.add('active');
   }
 }
 
