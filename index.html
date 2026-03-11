@@ -441,6 +441,73 @@
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    header { padding: 14px 16px; }
+    .logo { font-size: 18px; }
+    .header-date { display: none; }
+
+    .layout {
+      grid-template-columns: 1fr;
+      height: calc(100vh - 57px);
+    }
+    .sidebar, .ai-panel {
+      display: none;
+      position: fixed;
+      top: 57px; left: 0; right: 0; bottom: 57px;
+      z-index: 50;
+      border: none;
+      overflow-y: auto;
+    }
+    .sidebar.mobile-open {
+      display: block;
+      background: var(--surface);
+      padding: 20px 16px;
+    }
+    .ai-panel.mobile-open {
+      display: flex;
+      flex-direction: column;
+    }
+    .main { padding: 16px; padding-bottom: 80px; }
+    .main-header { margin-bottom: 16px; }
+    .main-title { font-size: 22px; }
+    .add-btn { padding: 9px 14px; font-size: 13px; }
+    .form-row-2 { grid-template-columns: 1fr; }
+    .modal { width: calc(100vw - 32px); padding: 20px; }
+    .task-delete { opacity: 1; }
+
+    .mobile-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 57px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+    }
+    .mobile-nav-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-family: 'Noto Sans KR', sans-serif;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: color 0.15s;
+    }
+    .mobile-nav-btn .nav-icon { font-size: 20px; }
+    .mobile-nav-btn.active { color: var(--accent); }
+  }
+
+  @media (min-width: 769px) {
+    .mobile-nav { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -538,6 +605,19 @@
     </div>
   </aside>
 </div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav" id="mobileNav">
+  <button class="mobile-nav-btn active" id="navMain" onclick="mobileTab('main')">
+    <span class="nav-icon">📋</span>태스크
+  </button>
+  <button class="mobile-nav-btn" id="navFilter" onclick="mobileTab('filter')">
+    <span class="nav-icon">🔍</span>필터
+  </button>
+  <button class="mobile-nav-btn" id="navAI" onclick="mobileTab('ai')">
+    <span class="nav-icon">✦</span>AI비서
+  </button>
+</nav>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
@@ -872,6 +952,31 @@ async function sendToAI(customMsg) {
 function quickAsk(q) {
   document.getElementById('aiInput').value = q;
   sendToAI(q);
+}
+
+// ─── MOBILE NAV ───
+function mobileTab(tab) {
+  const sidebar = document.querySelector('.sidebar');
+  const aiPanel = document.querySelector('.ai-panel');
+  const main = document.querySelector('.main');
+
+  sidebar.classList.remove('mobile-open');
+  aiPanel.classList.remove('mobile-open');
+
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+
+  if (tab === 'main') {
+    main.style.display = 'block';
+    document.getElementById('navMain').classList.add('active');
+  } else if (tab === 'filter') {
+    main.style.display = 'none';
+    sidebar.classList.add('mobile-open');
+    document.getElementById('navFilter').classList.add('active');
+  } else if (tab === 'ai') {
+    main.style.display = 'none';
+    aiPanel.classList.add('mobile-open');
+    document.getElementById('navAI').classList.add('active');
+  }
 }
 
 // ─── INIT ───
