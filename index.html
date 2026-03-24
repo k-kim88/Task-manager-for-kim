@@ -706,57 +706,63 @@
   .pin-change-link { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: -8px; }
   .pin-change-link:hover { color: var(--accent); }
 
-  /* ── STICKY NOTES ── */
-  .sticky-section { margin-top: 24px; }
-  .sticky-note {
-    background: #f5e642;
-    border-radius: 2px 12px 12px 2px;
-    padding: 0;
-    margin-bottom: 10px;
-    box-shadow: 2px 3px 10px rgba(0,0,0,0.3);
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s;
+  /* ── MEMO SLIDER ── */
+  .memo-slider-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
   }
-  .sticky-note:hover { transform: translateY(-2px); }
-  .sticky-note-colors { display: flex; gap: 6px; margin-bottom: 10px; }
-  .sticky-color-btn { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: border 0.15s; }
-  .sticky-color-btn:hover, .sticky-color-btn.active { border-color: white; }
-  .sticky-note-header {
+  .memo-slider-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 10px 4px;
-    background: rgba(0,0,0,0.08);
+    margin-bottom: 12px;
   }
-  .sticky-note-label { font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.5); letter-spacing: 1px; text-transform: uppercase; }
-  .sticky-note-del { background: none; border: none; cursor: pointer; color: rgba(0,0,0,0.35); font-size: 14px; padding: 0 2px; }
-  .sticky-note-del:hover { color: rgba(0,0,0,0.7); }
-  .sticky-textarea {
-    width: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    resize: none;
-    font-size: 13px;
+  .memo-slider-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .memo-slider-add {
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--muted); font-size: 14px; width: 26px; height: 26px;
+    cursor: pointer; transition: all 0.15s; display:flex;align-items:center;justify-content:center;
+  }
+  .memo-slider-add:hover { border-color: var(--accent); color: var(--accent); }
+  .memo-slider-track-wrap {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .memo-slider-track-wrap::-webkit-scrollbar { display: none; }
+  .memo-slider-track {
+    display: flex;
+    gap: 10px;
+    padding-bottom: 2px;
+  }
+  .memo-card {
+    flex-shrink: 0;
+    width: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    position: relative;
+    transition: border-color 0.15s;
+  }
+  .memo-card:hover { border-color: var(--accent); }
+  .memo-card-del {
+    position: absolute; top: 8px; right: 10px;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 12px;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .memo-card:hover .memo-card-del { opacity: 1; }
+  .memo-card-del:hover { color: var(--red); }
+  .memo-card-textarea {
+    width: 100%; background: transparent; border: none; outline: none;
+    resize: none; color: var(--text); font-size: 13px;
     font-family: 'Noto Sans KR', sans-serif;
-    color: #2a2a2a;
-    padding: 8px 12px 12px;
-    line-height: 1.6;
-    min-height: 80px;
+    line-height: 1.6; min-height: 70px; padding-right: 16px;
   }
-  .add-sticky-btn {
-    width: 100%;
-    background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    padding: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.15s;
-    margin-top: 4px;
-  }
-  .add-sticky-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .memo-card-textarea::placeholder { color: var(--muted); }
+  .memo-slider-empty { font-size: 13px; color: var(--muted); padding: 4px 0; }
 
   /* ── QUICK LINKS ── */
   .links-section { margin-top: 24px; }
@@ -925,6 +931,17 @@
       <input id="searchInput" placeholder="제목, 설명, 카테고리로 검색..." oninput="onSearch()">
       <span class="search-count" id="searchCount"></span>
     </div>
+    <!-- MEMO SLIDER -->
+    <div class="memo-slider-wrap" id="memoSliderWrap">
+      <div class="memo-slider-header">
+        <span class="memo-slider-title">📌 메모</span>
+        <button class="memo-slider-add" onclick="addSticky()">＋</button>
+      </div>
+      <div class="memo-slider-track-wrap">
+        <div class="memo-slider-track" id="memoSliderTrack"></div>
+      </div>
+    </div>
+
     <div class="today-banner" id="todayBanner">
       <div class="today-banner-title">📅 오늘 할 일</div>
       <div id="todayList"></div>
@@ -1695,27 +1712,21 @@ function initNotifBtn() {
 }
 
 
-// ─── STICKY NOTES ───
-const STICKY_COLORS = [
-  { bg: '#f5e642', label: '노랑' },
-  { bg: '#f0a060', label: '주황' },
-  { bg: '#a0e8a0', label: '초록' },
-  { bg: '#a0c8f0', label: '파랑' },
-  { bg: '#f0a0c8', label: '핑크' },
-];
+// ─── MEMO SLIDER ───
 let stickies = JSON.parse(localStorage.getItem('biseo_stickies') || '[]');
 
 function saveStickies() { localStorage.setItem('biseo_stickies', JSON.stringify(stickies)); }
 
 function addSticky() {
-  const s = { id: Date.now().toString(), text: '', color: STICKY_COLORS[0].bg };
+  const s = { id: Date.now().toString(), text: '' };
   stickies.unshift(s);
   saveStickies();
   renderStickies();
-  // 새 메모의 textarea에 포커스
   setTimeout(() => {
     const ta = document.querySelector(`[data-sticky-id="${s.id}"]`);
-    if (ta) ta.focus();
+    if (ta) { ta.focus(); }
+    const track = document.getElementById('memoSliderTrack');
+    if (track) track.parentElement.scrollLeft = 0;
   }, 50);
 }
 
@@ -1729,27 +1740,18 @@ function updateStickyText(id, text) {
   if (s) { s.text = text; saveStickies(); }
 }
 
-function updateStickyColor(id, color) {
-  const s = stickies.find(s => s.id === id);
-  if (s) { s.color = color; saveStickies(); renderStickies(); }
-}
-
 function renderStickies() {
-  const list = document.getElementById('stickyList');
-  if (!list) return;
+  const track = document.getElementById('memoSliderTrack');
+  if (!track) return;
   if (stickies.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">메모가 없습니다.</div>';
+    track.innerHTML = '<div class="memo-slider-empty">＋ 버튼으로 메모를 추가해보세요.</div>';
     return;
   }
-  list.innerHTML = stickies.map(s => `
-    <div class="sticky-note" style="background:${s.color}">
-      <div class="sticky-note-header">
-        <div style="display:flex;gap:5px">
-          ${STICKY_COLORS.map(c => `<div class="sticky-color-btn ${c.bg===s.color?'active':''}" style="background:${c.bg}" onclick="updateStickyColor('${s.id}','${c.bg}')"></div>`).join('')}
-        </div>
-        <button class="sticky-note-del" onclick="deleteSticky('${s.id}')">✕</button>
-      </div>
-      <textarea class="sticky-textarea" data-sticky-id="${s.id}" placeholder="메모를 입력하세요..."
+  track.innerHTML = stickies.map(s => `
+    <div class="memo-card">
+      <button class="memo-card-del" onclick="deleteSticky('${s.id}')">✕</button>
+      <textarea class="memo-card-textarea" data-sticky-id="${s.id}"
+        placeholder="메모 입력..."
         oninput="updateStickyText('${s.id}', this.value)">${s.text}</textarea>
     </div>`).join('');
 }
