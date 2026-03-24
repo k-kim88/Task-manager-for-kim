@@ -1170,11 +1170,17 @@ function showSyncStatus(msg, color='var(--muted)') {
 async function loadTasks() {
   showSyncStatus('⟳ 불러오는 중...', 'var(--accent2)');
   try {
-    const res = await fetch(SHEET_URL + '?action=getTasks');
+    const res = await fetch(SHEET_URL + '?action=getTasks&t=' + Date.now()); // 캐시 방지
     const data = await res.json();
-    tasks = data.tasks || [];
-    showSyncStatus('✓ 동기화됨', 'var(--green)');
+    if (data.tasks) {
+      tasks = data.tasks;
+      localStorage.setItem('biseo_tasks', JSON.stringify(tasks)); // 로컬도 최신화
+      showSyncStatus('✓ 동기화됨', 'var(--green)');
+    } else {
+      throw new Error(data.error || 'no tasks');
+    }
   } catch(e) {
+    console.error('load error:', e);
     tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
     showSyncStatus('⚠ 오프라인 모드', 'var(--yellow)');
   }
@@ -1185,10 +1191,16 @@ async function saveTasks() {
   localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
   showSyncStatus('⟳ 저장 중...', 'var(--accent2)');
   try {
-    const params = new URLSearchParams({ action: 'saveTasks', tasks: JSON.stringify(tasks) });
-    await fetch(SHEET_URL + '?' + params.toString());
-    showSyncStatus('✓ 동기화됨', 'var(--green)');
+    const encoded = encodeURIComponent(JSON.stringify(tasks));
+    const res = await fetch(SHEET_URL + '?action=saveTasks&tasks=' + encoded);
+    const data = await res.json();
+    if (data.success) {
+      showSyncStatus('✓ 동기화됨', 'var(--green)');
+    } else {
+      throw new Error(data.error || 'failed');
+    }
   } catch(e) {
+    console.error('sync error:', e);
     showSyncStatus('⚠ 로컬 저장됨', 'var(--yellow)');
   }
 }
