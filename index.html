@@ -656,9 +656,87 @@
   .notif-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
   .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
   .notif-btn.enabled { border-color: var(--green); color: var(--green); }
+
+  /* PIN LOCK */
+  .pin-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .pin-overlay.hidden { display: none; }
+  .pin-logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); }
+  .pin-logo span { color: var(--muted); font-style: italic; }
+  .pin-subtitle { font-size: 13px; color: var(--muted); margin-top: -16px; }
+  .pin-dots { display: flex; gap: 14px; }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    transition: all 0.15s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-dot.error { background: var(--red); border-color: var(--red); }
+  .pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 240px;
+  }
+  .pin-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .pin-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .pin-btn:active { transform: scale(0.94); }
+  .pin-btn.del { font-size: 16px; color: var(--muted); }
+  .pin-btn.empty { background: transparent; border: none; cursor: default; }
+  .pin-error { font-size: 12px; color: var(--red); height: 16px; text-align: center; }
+  .pin-change-link { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: -8px; }
+  .pin-change-link:hover { color: var(--accent); }
 </style>
 </head>
 <body>
+
+<!-- PIN LOCK -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-logo">비서<span>desk</span></div>
+  <div class="pin-subtitle">PIN을 입력하세요</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-error" id="pinError"></div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinInput('1')">1</button>
+    <button class="pin-btn" onclick="pinInput('2')">2</button>
+    <button class="pin-btn" onclick="pinInput('3')">3</button>
+    <button class="pin-btn" onclick="pinInput('4')">4</button>
+    <button class="pin-btn" onclick="pinInput('5')">5</button>
+    <button class="pin-btn" onclick="pinInput('6')">6</button>
+    <button class="pin-btn" onclick="pinInput('7')">7</button>
+    <button class="pin-btn" onclick="pinInput('8')">8</button>
+    <button class="pin-btn" onclick="pinInput('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinInput('0')">0</button>
+    <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+  </div>
+  <div class="pin-change-link" onclick="changePin()">PIN 변경</div>
+</div>
+
 
 <header>
   <div class="logo">비서<span>desk</span></div>
@@ -839,6 +917,80 @@
 </div>
 
 <script>
+
+// ─── PIN LOCK ───
+const DEFAULT_PIN = '1234';
+let pinBuffer = '';
+let pinSetting = false;
+let pinNewBuffer = '';
+
+function pinInput(n) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDots(pinBuffer.length, false);
+  if (pinBuffer.length === 4) {
+    setTimeout(() => checkPin(), 150);
+  }
+}
+
+function pinDelete() {
+  if (pinBuffer.length > 0) {
+    pinBuffer = pinBuffer.slice(0, -1);
+    updatePinDots(pinBuffer.length, false);
+  }
+}
+
+function updatePinDots(count, error) {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    dot.classList.toggle('filled', i < count && !error);
+    dot.classList.toggle('error', i < count && error);
+  }
+}
+
+function checkPin() {
+  const saved = localStorage.getItem('biseo_pin') || DEFAULT_PIN;
+  if (pinBuffer === saved) {
+    document.getElementById('pinOverlay').classList.add('hidden');
+    document.getElementById('pinError').textContent = '';
+    // 세션 유지 (8시간)
+    sessionStorage.setItem('pin_ok', Date.now());
+  } else {
+    updatePinDots(4, true);
+    document.getElementById('pinError').textContent = '틀렸습니다. 다시 입력하세요.';
+    setTimeout(() => {
+      pinBuffer = '';
+      updatePinDots(0, false);
+      document.getElementById('pinError').textContent = '';
+    }, 800);
+  }
+}
+
+function changePin() {
+  const current = prompt('현재 PIN을 입력하세요:');
+  const saved = localStorage.getItem('biseo_pin') || DEFAULT_PIN;
+  if (current !== saved) { alert('현재 PIN이 틀렸습니다.'); return; }
+  const newPin = prompt('새 PIN 4자리를 입력하세요:');
+  if (!newPin || newPin.length !== 4 || isNaN(newPin)) { alert('PIN은 숫자 4자리여야 합니다.'); return; }
+  const confirm2 = prompt('새 PIN을 한 번 더 입력하세요:');
+  if (newPin !== confirm2) { alert('PIN이 일치하지 않습니다.'); return; }
+  localStorage.setItem('biseo_pin', newPin);
+  alert('PIN이 변경되었습니다!');
+}
+
+function initPin() {
+  // 8시간 이내 인증된 세션이면 스킵
+  const pinOk = sessionStorage.getItem('pin_ok');
+  if (pinOk && Date.now() - parseInt(pinOk) < 8 * 60 * 60 * 1000) {
+    document.getElementById('pinOverlay').classList.add('hidden');
+    return;
+  }
+  // 최초 실행 시 PIN 안내
+  if (!localStorage.getItem('biseo_pin')) {
+    document.getElementById('pinOverlay').querySelector('.pin-subtitle').textContent = '기본 PIN: 1234 (변경 가능)';
+  }
+}
+
 // ─── STATE ───
 const SHEET_URL = 'https://script.google.com/a/macros/fancsglobal.com/s/AKfycbz_LtF0fMQAm9GHW52jZ0QA7bag0WQ8l_rjHQmo0urMkQ-1VETKTVlooOY5eoeJyMHv0g/exec';
 let tasks = [];
@@ -1419,6 +1571,7 @@ function mobileTab(tab) {
 }
 
 // ─── INIT ───
+initPin();
 loadTasks();
 </script>
 </body>
