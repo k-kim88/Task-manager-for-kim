@@ -706,63 +706,36 @@
   .pin-change-link { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: -8px; }
   .pin-change-link:hover { color: var(--accent); }
 
-  /* ── MEMO SLIDER ── */
-  .memo-slider-wrap {
+  /* ── PIN MEMO ── */
+  .pin-memo-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
     border-radius: 12px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     margin-bottom: 16px;
-  }
-  .memo-slider-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
-  }
-  .memo-slider-title { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-  .memo-slider-add {
-    background: transparent; border: 1px solid var(--border); border-radius: 6px;
-    color: var(--muted); font-size: 14px; width: 26px; height: 26px;
-    cursor: pointer; transition: all 0.15s; display:flex;align-items:center;justify-content:center;
-  }
-  .memo-slider-add:hover { border-color: var(--accent); color: var(--accent); }
-  .memo-slider-track-wrap {
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .memo-slider-track-wrap::-webkit-scrollbar { display: none; }
-  .memo-slider-track {
-    display: flex;
-    gap: 10px;
-    padding-bottom: 2px;
-  }
-  .memo-card {
-    flex-shrink: 0;
-    width: 200px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
     position: relative;
-    transition: border-color 0.15s;
   }
-  .memo-card:hover { border-color: var(--accent); }
-  .memo-card-del {
-    position: absolute; top: 8px; right: 10px;
-    background: none; border: none; cursor: pointer;
-    color: var(--muted); font-size: 12px;
-    opacity: 0; transition: opacity 0.15s;
+  .pin-memo-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
   }
-  .memo-card:hover .memo-card-del { opacity: 1; }
-  .memo-card-del:hover { color: var(--red); }
-  .memo-card-textarea {
+  .pin-memo-icon { font-size: 13px; }
+  .pin-memo-label { font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; flex: 1; }
+  .pin-memo-clear {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--muted); font-size: 11px; padding: 2px 6px;
+    border-radius: 4px; font-family: 'Noto Sans KR', sans-serif;
+    transition: color 0.15s;
+  }
+  .pin-memo-clear:hover { color: var(--red); }
+  .pin-memo-textarea {
     width: 100%; background: transparent; border: none; outline: none;
-    resize: none; color: var(--text); font-size: 13px;
+    resize: none; color: var(--text); font-size: 14px;
     font-family: 'Noto Sans KR', sans-serif;
-    line-height: 1.6; min-height: 70px; padding-right: 16px;
+    line-height: 1.8; min-height: 100px;
   }
-  .memo-card-textarea::placeholder { color: var(--muted); }
-  .memo-slider-empty { font-size: 13px; color: var(--muted); padding: 4px 0; }
+  .pin-memo-textarea::placeholder { color: var(--muted); font-size: 13px; }
 
   /* ── QUICK LINKS ── */
   .links-section { margin-top: 24px; }
@@ -931,15 +904,16 @@
       <input id="searchInput" placeholder="제목, 설명, 카테고리로 검색..." oninput="onSearch()">
       <span class="search-count" id="searchCount"></span>
     </div>
-    <!-- MEMO SLIDER -->
-    <div class="memo-slider-wrap" id="memoSliderWrap">
-      <div class="memo-slider-header">
-        <span class="memo-slider-title">📌 메모</span>
-        <button class="memo-slider-add" onclick="addSticky()">＋</button>
+    <!-- PIN MEMO -->
+    <div class="pin-memo-wrap">
+      <div class="pin-memo-header">
+        <span class="pin-memo-icon">📌</span>
+        <span class="pin-memo-label">핀 메모</span>
+        <button class="pin-memo-clear" onclick="clearPinMemo()">지우기</button>
       </div>
-      <div class="memo-slider-track-wrap">
-        <div class="memo-slider-track" id="memoSliderTrack"></div>
-      </div>
+      <textarea class="pin-memo-textarea" id="pinMemoTextarea"
+        placeholder="이번 달 플랜, 중요 메모 등을 자유롭게 입력하세요..."
+        oninput="savePinMemo()"></textarea>
     </div>
 
     <div class="today-banner" id="todayBanner">
@@ -1170,29 +1144,39 @@ function showSyncStatus(msg, color='var(--muted)') {
 async function loadTasks() {
   showSyncStatus('⟳ 불러오는 중...', 'var(--accent2)');
   try {
-    const res = await fetch(SHEET_URL + '?action=getTasks&t=' + Date.now()); // 캐시 방지
+    const res = await fetch(SHEET_URL + '?action=getAll&t=' + Date.now());
     const data = await res.json();
-    if (data.tasks) {
-      tasks = data.tasks;
-      localStorage.setItem('biseo_tasks', JSON.stringify(tasks)); // 로컬도 최신화
+    if (data.tasks !== undefined) {
+      tasks = data.tasks || [];
+      stickies = data.stickies || [];
+      links = data.links || [];
+      localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
+      localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
+      localStorage.setItem('biseo_links', JSON.stringify(links));
       showSyncStatus('✓ 동기화됨', 'var(--green)');
     } else {
-      throw new Error(data.error || 'no tasks');
+      throw new Error(data.error || 'no data');
     }
   } catch(e) {
     console.error('load error:', e);
     tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
+    stickies = JSON.parse(localStorage.getItem('biseo_stickies') || '[]');
+    links = JSON.parse(localStorage.getItem('biseo_links') || '[]');
     showSyncStatus('⚠ 오프라인 모드', 'var(--yellow)');
   }
   renderTasks();
+  renderStickies();
+  renderLinks();
 }
 
 async function saveTasks() {
   localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
+  localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
+  localStorage.setItem('biseo_links', JSON.stringify(links));
   showSyncStatus('⟳ 저장 중...', 'var(--accent2)');
   try {
-    const encoded = encodeURIComponent(JSON.stringify(tasks));
-    const res = await fetch(SHEET_URL + '?action=saveTasks&tasks=' + encoded);
+    const payload = encodeURIComponent(JSON.stringify({ tasks, stickies, links }));
+    const res = await fetch(SHEET_URL + '?action=saveAll&payload=' + payload);
     const data = await res.json();
     if (data.success) {
       showSyncStatus('✓ 동기화됨', 'var(--green)');
@@ -1724,54 +1708,37 @@ function initNotifBtn() {
 }
 
 
-// ─── MEMO SLIDER ───
+// ─── PIN MEMO ───
+// stickies를 핀메모 단일 텍스트로 재활용 (시트 연동 유지)
 let stickies = JSON.parse(localStorage.getItem('biseo_stickies') || '[]');
 
-function saveStickies() { localStorage.setItem('biseo_stickies', JSON.stringify(stickies)); }
+function saveStickies() { saveTasks(); }
 
-function addSticky() {
-  const s = { id: Date.now().toString(), text: '' };
-  stickies.unshift(s);
-  saveStickies();
-  renderStickies();
-  setTimeout(() => {
-    const ta = document.querySelector(`[data-sticky-id="${s.id}"]`);
-    if (ta) { ta.focus(); }
-    const track = document.getElementById('memoSliderTrack');
-    if (track) track.parentElement.scrollLeft = 0;
-  }, 50);
+function savePinMemo() {
+  const text = document.getElementById('pinMemoTextarea').value;
+  stickies = [{ id: 'pin', text }];
+  localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
+  saveTasks();
 }
 
-function deleteSticky(id) {
-  stickies = stickies.filter(s => s.id !== id);
-  saveStickies(); renderStickies();
-}
-
-function updateStickyText(id, text) {
-  const s = stickies.find(s => s.id === id);
-  if (s) { s.text = text; saveStickies(); }
+function clearPinMemo() {
+  if (!confirm('메모를 지울까요?')) return;
+  document.getElementById('pinMemoTextarea').value = '';
+  stickies = [{ id: 'pin', text: '' }];
+  saveTasks();
 }
 
 function renderStickies() {
-  const track = document.getElementById('memoSliderTrack');
-  if (!track) return;
-  if (stickies.length === 0) {
-    track.innerHTML = '<div class="memo-slider-empty">＋ 버튼으로 메모를 추가해보세요.</div>';
-    return;
-  }
-  track.innerHTML = stickies.map(s => `
-    <div class="memo-card">
-      <button class="memo-card-del" onclick="deleteSticky('${s.id}')">✕</button>
-      <textarea class="memo-card-textarea" data-sticky-id="${s.id}"
-        placeholder="메모 입력..."
-        oninput="updateStickyText('${s.id}', this.value)">${s.text}</textarea>
-    </div>`).join('');
+  const ta = document.getElementById('pinMemoTextarea');
+  if (!ta) return;
+  const pin = stickies.find(s => s.id === 'pin') || stickies[0];
+  ta.value = pin ? pin.text : '';
 }
 
 // ─── QUICK LINKS ───
 let links = JSON.parse(localStorage.getItem('biseo_links') || '[]');
 
-function saveLinks() { localStorage.setItem('biseo_links', JSON.stringify(links)); }
+function saveLinks() { saveTasks(); }
 
 function openLinkModal() { document.getElementById('linkModalOverlay').classList.add('open'); setTimeout(()=>document.getElementById('lName').focus(),100); }
 function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('open'); document.getElementById('lName').value=''; document.getElementById('lUrl').value=''; }
