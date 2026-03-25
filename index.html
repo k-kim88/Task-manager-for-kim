@@ -593,6 +593,37 @@
     .mobile-nav { display: none; }
   }
 
+  /* ── 태블릿 최적화 ── */
+  @media (min-width: 769px) and (max-width: 1100px) {
+    .layout { grid-template-columns: 240px 1fr; }
+    .sidebar { padding: 20px 14px; }
+    .main { padding: 20px; }
+    .stat-num { font-size: 22px; }
+    .modal { width: 520px; }
+    header { padding: 16px 24px; }
+    .task-card { padding: 14px 16px; }
+    /* 태블릿도 터치 최적화 */
+    * { -webkit-tap-highlight-color: transparent; }
+    .task-check { width: 24px; height: 24px; }
+    .filter-btn { padding: 11px 14px; }
+    .pin-btn { padding: 18px; }
+  }
+
+  /* 모바일 추가 최적화 */
+  @media (max-width: 768px) {
+    /* 부드러운 스크롤 */
+    .main, .sidebar { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+    /* 버튼 탭 영역 충분히 확보 */
+    .task-check { width: 26px; height: 26px; }
+    .task-delete { width: 32px; height: 32px; font-size: 14px; display:flex;align-items:center;justify-content:center; }
+    .filter-btn { padding: 12px 14px; }
+    .stat-card { padding: 16px; }
+    /* 모달 하단 여백 */
+    .modal { max-height: 90vh; overflow-y: auto; }
+    /* 핀 버튼 터치 영역 */
+    .pin-btn { padding: 18px; min-height: 58px; }
+  }
+
   /* CHART MODAL */
   .chart-modal-overlay {
     position: fixed; inset: 0;
@@ -656,6 +687,13 @@
   .notif-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
   .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
   .notif-btn.enabled { border-color: var(--green); color: var(--green); }
+
+  /* MOBILE TOUCH OPTIMIZE */
+  * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  input, textarea, select, button { font-size: 16px !important; } /* iOS 자동확대 방지 */
+  @media (max-width: 768px) {
+    input, textarea, select { font-size: 16px !important; }
+  }
 
   /* PIN LOCK */
   .pin-overlay {
@@ -1066,6 +1104,15 @@ function pinInput(n) {
     setTimeout(() => checkPin(), 150);
   }
 }
+
+// 키보드 입력 지원
+document.addEventListener('keydown', function(e) {
+  const overlay = document.getElementById('pinOverlay');
+  if (!overlay || overlay.classList.contains('hidden')) return;
+  if (e.key >= '0' && e.key <= '9') pinInput(e.key);
+  else if (e.key === 'Backspace') pinDelete();
+  else if (e.key === 'Enter' && pinBuffer.length === 4) checkPin();
+});
 
 function pinDelete() {
   if (pinBuffer.length > 0) {
