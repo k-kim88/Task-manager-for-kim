@@ -2,8 +2,24 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="theme-color" content="#0e0f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="지휘통제실">
+<link rel="manifest" id="manifestLink">
+<script>
+// PWA manifest 동적 생성
+window.addEventListener('DOMContentLoaded', function() {
+  const svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0e0f13"/><text y=".9em" font-size="72" x="12">📋</text></svg>';
+  const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(svgIcon);
+  const manifest = { name: '김광민의 지휘통제실', short_name: '김광민의 지휘통제실', start_url: './', display: 'standalone', background_color: '#0e0f13', theme_color: '#0e0f13', icons: [{ src: iconUrl, sizes: '192x192', type: 'image/svg+xml' }] };
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+  const link = document.getElementById('manifestLink');
+  if (link) link.href = URL.createObjectURL(blob);
+});
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>비서 태스크 매니저</title>
+<title>김광민의 지휘통제실</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -827,13 +843,148 @@
     transform: translateY(16px); transition: transform 0.2s;
   }
   .link-modal-overlay.open .link-modal { transform: translateY(0); }
+
+  /* ── MEETING NOTES ── */
+  .meeting-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .meeting-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  .meeting-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .meeting-overlay.open { opacity: 1; pointer-events: all; }
+  .meeting-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    width: 600px; max-width: calc(100vw - 32px);
+    max-height: 85vh;
+    overflow-y: auto;
+    transform: translateY(20px); transition: transform 0.2s;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .meeting-overlay.open .meeting-modal { transform: translateY(0); }
+  .meeting-header { display: flex; align-items: center; justify-content: space-between; }
+  .meeting-title { font-family: 'DM Serif Display', serif; font-size: 20px; }
+
+  .meeting-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .rec-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 10px; border: none;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
+  }
+  .rec-btn.start { background: var(--accent3); color: white; }
+  .rec-btn.start:hover { background: #ff70c8; }
+  .rec-btn.stop { background: var(--red); color: white; }
+  .rec-btn.stop:hover { background: #ff7070; }
+  .rec-btn.pause { background: var(--yellow); color: #0e0f13; }
+
+  .rec-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+  }
+  .rec-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .rec-dot.recording { background: var(--red); animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .meeting-transcript {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    min-height: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .meeting-transcript.empty { color: var(--muted); font-style: italic; }
+
+  .meeting-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .meeting-save-btn {
+    background: var(--accent);
+    color: #0e0f13;
+    border: none; border-radius: 8px;
+    padding: 10px 20px; font-weight: 700;
+    cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; transition: all 0.15s;
+  }
+  .meeting-save-btn:hover { background: #d8ff70; }
+  .meeting-copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    padding: 10px 20px; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; transition: all 0.15s;
+  }
+  .meeting-copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .meeting-clear-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    padding: 10px 20px; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px; transition: all 0.15s;
+    margin-left: auto;
+  }
+  .meeting-clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .meeting-saved-list { display: flex; flex-direction: column; gap: 8px; }
+  .meeting-saved-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .meeting-saved-item-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .meeting-saved-item-date { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .meeting-saved-item-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; }
+  .meeting-saved-item-del:hover { color: var(--red); }
+  .meeting-saved-item-text { color: var(--text); line-height: 1.6; max-height: 80px; overflow: hidden; text-overflow: ellipsis; }
+  .meeting-lang-select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
 <!-- PIN LOCK -->
 <div class="pin-overlay" id="pinOverlay">
-  <div class="pin-logo">비서<span>desk</span></div>
+  <div class="pin-logo">지휘통제실<span> by 김광민</span></div>
   <div class="pin-subtitle">PIN을 입력하세요</div>
   <div class="pin-dots">
     <div class="pin-dot" id="pd0"></div>
@@ -861,8 +1012,9 @@
 
 
 <header>
-  <div class="logo">비서<span>desk</span></div>
+  <div class="logo">지휘통제실<span> by 김광민</span></div>
   <div style="display:flex;align-items:center;gap:10px">
+    <button class="meeting-btn" onclick="openMeeting()">🎙️ 회의록</button>
     <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()">🔔 알림</button>
     <button class="notif-btn" onclick="openChart()" style="border-color:var(--accent2);color:var(--accent2)">📊 통계</button>
     <span id="syncStatus" style="font-size:12px;color:var(--muted);font-family:JetBrains Mono,monospace">⟳ 불러오는 중...</span>
@@ -978,6 +1130,46 @@
 </nav>
 
 
+
+
+<!-- MEETING MODAL -->
+<div class="meeting-overlay" id="meetingOverlay">
+  <div class="meeting-modal">
+    <div class="meeting-header">
+      <div class="meeting-title">🎙️ 회의록</div>
+      <button class="btn-cancel" onclick="closeMeeting()">닫기</button>
+    </div>
+
+    <div class="meeting-controls">
+      <select class="meeting-lang-select" id="meetingLang">
+        <option value="ko-KR">🇰🇷 한국어</option>
+        <option value="ja-JP">🇯🇵 일본어</option>
+        <option value="en-US">🇺🇸 영어</option>
+      </select>
+      <button class="rec-btn start" id="recStartBtn" onclick="startRecording()">● 녹음 시작</button>
+      <button class="rec-btn stop" id="recStopBtn" onclick="stopRecording()" style="display:none">■ 중지</button>
+      <div class="rec-status">
+        <div class="rec-dot" id="recDot"></div>
+        <span id="recStatusText">대기 중</span>
+      </div>
+    </div>
+
+    <div class="meeting-transcript" id="meetingTranscript">
+      <span style="color:var(--muted);font-style:italic">녹음 시작 버튼을 누르면 음성이 자동으로 텍스트로 변환됩니다...</span>
+    </div>
+
+    <div class="meeting-actions">
+      <button class="meeting-save-btn" onclick="saveMeetingNote()">💾 저장</button>
+      <button class="meeting-copy-btn" onclick="copyTranscript()">📋 복사</button>
+      <button class="meeting-clear-btn" onclick="clearTranscript()">🗑 지우기</button>
+    </div>
+
+    <div id="meetingSavedSection" style="display:none">
+      <div class="sidebar-title" style="margin-bottom:10px">저장된 회의록</div>
+      <div class="meeting-saved-list" id="meetingSavedList"></div>
+    </div>
+  </div>
+</div>
 
 <!-- LINK MODAL -->
 <div class="link-modal-overlay" id="linkModalOverlay">
@@ -1829,6 +2021,147 @@ function renderLinks() {
 
 document.getElementById('linkModalOverlay').addEventListener('click', function(e) { if(e.target===this) closeLinkModal(); });
 document.getElementById('lUrl').addEventListener('keydown', function(e) { if(e.key==='Enter') saveLink(); });
+
+
+// ─── MEETING NOTES ───
+let recognition = null;
+let isRecording = false;
+let transcriptText = '';
+let meetingNotes = JSON.parse(localStorage.getItem('biseo_meetings') || '[]');
+
+function openMeeting() {
+  renderMeetingSaved();
+  document.getElementById('meetingOverlay').classList.add('open');
+}
+function closeMeeting() {
+  if (isRecording) stopRecording();
+  document.getElementById('meetingOverlay').classList.remove('open');
+}
+document.getElementById('meetingOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeMeeting();
+});
+
+function startRecording() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('이 브라우저는 음성인식을 지원하지 않아요. Chrome을 사용해주세요!');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = document.getElementById('meetingLang').value;
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    document.getElementById('recStartBtn').style.display = 'none';
+    document.getElementById('recStopBtn').style.display = 'flex';
+    document.getElementById('recDot').classList.add('recording');
+    document.getElementById('recStatusText').textContent = '녹음 중...';
+  };
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    if (final) transcriptText += final + ' ';
+    const display = transcriptText + (interim ? `[${interim}]` : '');
+    const el = document.getElementById('meetingTranscript');
+    el.textContent = display || '';
+    el.scrollTop = el.scrollHeight;
+  };
+
+  recognition.onerror = (e) => {
+    console.error('Speech error:', e.error);
+    if (e.error === 'not-allowed') {
+      alert('마이크 권한을 허용해주세요!');
+    }
+    stopRecording();
+  };
+
+  recognition.onend = () => {
+    if (isRecording) recognition.start(); // 자동 재시작 (연속 녹음)
+  };
+
+  // 빈 상태면 초기화
+  if (!transcriptText) {
+    document.getElementById('meetingTranscript').textContent = '';
+  }
+
+  recognition.start();
+}
+
+function stopRecording() {
+  if (recognition) {
+    isRecording = false;
+    recognition.onend = null;
+    recognition.stop();
+    recognition = null;
+  }
+  document.getElementById('recStartBtn').style.display = 'flex';
+  document.getElementById('recStopBtn').style.display = 'none';
+  document.getElementById('recDot').classList.remove('recording');
+  document.getElementById('recStatusText').textContent = '중지됨';
+}
+
+function clearTranscript() {
+  if (!confirm('텍스트를 지울까요?')) return;
+  transcriptText = '';
+  document.getElementById('meetingTranscript').innerHTML = '<span style="color:var(--muted);font-style:italic">녹음 시작 버튼을 누르면 음성이 자동으로 텍스트로 변환됩니다...</span>';
+  document.getElementById('recStatusText').textContent = '대기 중';
+}
+
+function copyTranscript() {
+  const text = transcriptText.trim();
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.meeting-copy-btn');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = '📋 복사', 1500);
+  });
+}
+
+function saveMeetingNote() {
+  const text = transcriptText.trim();
+  if (!text) { alert('저장할 내용이 없어요!'); return; }
+  const note = {
+    id: Date.now().toString(),
+    text,
+    date: new Date().toLocaleString('ko-KR')
+  };
+  meetingNotes.unshift(note);
+  localStorage.setItem('biseo_meetings', JSON.stringify(meetingNotes));
+  renderMeetingSaved();
+  alert('저장됐어요! 💾');
+}
+
+function deleteMeetingNote(id) {
+  meetingNotes = meetingNotes.filter(n => n.id !== id);
+  localStorage.setItem('biseo_meetings', JSON.stringify(meetingNotes));
+  renderMeetingSaved();
+}
+
+function renderMeetingSaved() {
+  const section = document.getElementById('meetingSavedSection');
+  const list = document.getElementById('meetingSavedList');
+  if (!meetingNotes.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  list.innerHTML = meetingNotes.map(n => `
+    <div class="meeting-saved-item">
+      <div class="meeting-saved-item-header">
+        <span class="meeting-saved-item-date">${n.date}</span>
+        <button class="meeting-saved-item-del" onclick="deleteMeetingNote('${n.id}')">✕</button>
+      </div>
+      <div class="meeting-saved-item-text">${n.text}</div>
+    </div>`).join('');
+}
 
 // ─── MOBILE NAV ───
 initNotifBtn();
