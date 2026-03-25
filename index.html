@@ -978,6 +978,165 @@ window.addEventListener('DOMContentLoaded', function() {
     outline: none;
     cursor: pointer;
   }
+
+  /* ── VIEW TABS ── */
+  .view-tabs {
+    display: flex; gap: 4px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .view-tab {
+    flex: 1; padding: 8px 12px;
+    background: transparent; border: none;
+    border-radius: 7px; color: var(--muted);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .view-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .view-tab:hover:not(.active) { color: var(--text); }
+
+  /* ── CALENDAR ── */
+  .calendar-wrap { display: none; }
+  .calendar-wrap.show { display: block; }
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .cal-nav { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 14px; cursor: pointer; font-size: 16px; transition: all 0.15s; }
+  .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-month { font-family: 'DM Serif Display', serif; font-size: 20px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-label { text-align: center; font-size: 11px; color: var(--muted); padding: 6px 0; font-weight: 600; }
+  .cal-day-label:first-child { color: #f06060; }
+  .cal-day-label:last-child { color: var(--accent2); }
+  .cal-cell {
+    min-height: 70px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px; cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .cal-cell:hover { border-color: var(--accent); }
+  .cal-cell.today { border-color: var(--accent); background: rgba(200,240,96,0.05); }
+  .cal-cell.other-month { opacity: 0.3; }
+  .cal-cell.has-task::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+  .cal-date { font-size: 12px; font-weight: 600; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+  .cal-cell.today .cal-date { color: var(--accent); }
+  .cal-task-dot {
+    font-size: 10px; padding: 2px 5px;
+    border-radius: 4px; margin-bottom: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    line-height: 1.4;
+  }
+  .cal-task-dot.p-high { background: rgba(240,96,96,0.2); color: var(--red); }
+  .cal-task-dot.p-mid { background: rgba(240,192,96,0.2); color: var(--yellow); }
+  .cal-task-dot.p-low { background: rgba(96,240,160,0.2); color: var(--green); }
+  .cal-task-dot.done { opacity: 0.4; text-decoration: line-through; }
+
+  /* ── BRIEFING MODAL ── */
+  .briefing-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .briefing-overlay.open { opacity: 1; pointer-events: all; }
+  .briefing-modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px;
+    width: 520px; max-width: calc(100vw - 32px);
+    transform: translateY(24px); transition: transform 0.3s;
+  }
+  .briefing-overlay.open .briefing-modal { transform: translateY(0); }
+  .briefing-greeting { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 6px; }
+  .briefing-date { font-size: 13px; color: var(--muted); margin-bottom: 24px; font-family: 'JetBrains Mono', monospace; }
+  .briefing-section { margin-bottom: 20px; }
+  .briefing-section-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+  .briefing-weather { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .briefing-weather-icon { font-size: 32px; }
+  .briefing-weather-info { line-height: 1.6; }
+  .briefing-task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .briefing-task-item:last-child { border-bottom: none; }
+  .briefing-pri-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .briefing-close { width: 100%; background: var(--accent); color: #0e0f13; border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; margin-top: 8px; transition: all 0.15s; }
+  .briefing-close:hover { background: #d8ff70; }
+  .briefing-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .briefing-stat { background: var(--surface2); border-radius: 10px; padding: 12px; text-align: center; }
+  .briefing-stat-num { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .briefing-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── SCRAPBOOK ── */
+  .scrap-section { margin-top: 24px; }
+  .scrap-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
+    transition: all 0.15s; position: relative;
+  }
+  .scrap-item:hover { border-color: var(--accent3); }
+  .scrap-item-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; color: var(--text); }
+  .scrap-item-url { font-size: 11px; color: var(--accent2); cursor: pointer; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .scrap-item-url:hover { text-decoration: underline; }
+  .scrap-item-note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+  .scrap-item-del { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; opacity: 0; transition: opacity 0.15s; }
+  .scrap-item:hover .scrap-item-del { opacity: 1; }
+  .scrap-item-del:hover { color: var(--red); }
+  .scrap-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(240,96,180,0.15); color: var(--accent3); margin-top: 4px; }
+
+  /* SCRAP MODAL */
+  .scrap-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .scrap-modal-overlay.open { opacity: 1; pointer-events: all; }
+  .scrap-modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px;
+    width: 400px; max-width: calc(100vw - 32px);
+    transform: translateY(16px); transition: transform 0.2s;
+  }
+  .scrap-modal-overlay.open .scrap-modal { transform: translateY(0); }
+
+  /* ── TASK LINKS ── */
+  .task-links { margin: 8px 0 4px 32px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .task-link-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px;
+    font-size: 11px; color: var(--accent2);
+    text-decoration: none; transition: all 0.15s; max-width: 180px;
+  }
+  .task-link-chip:hover { border-color: var(--accent2); background: rgba(96,180,240,0.1); }
+  .task-link-chip .chip-icon { font-size: 12px; flex-shrink: 0; }
+  .task-link-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 모달 링크 섹션 */
+  .modal-links-section { margin-top: 16px; }
+  .modal-link-item {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
+  }
+  .modal-link-item-icon { font-size: 14px; flex-shrink: 0; }
+  .modal-link-item-label { flex: 1; font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .modal-link-item-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; transition: color 0.15s; }
+  .modal-link-item-del:hover { color: var(--red); }
+  .modal-link-add-row { display: flex; gap: 6px; margin-top: 8px; }
+  .modal-link-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 12px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; outline: none; }
+  .modal-link-input:focus { border-color: var(--accent2); }
+  .modal-link-add-btn { background: var(--accent2); color: #0e0f13; border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; white-space: nowrap; }
+  .modal-link-add-btn:hover { background: #70c4ff; }
+  .gdrive-shortcut {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(96,180,240,0.1); border: 1px solid rgba(96,180,240,0.3);
+    border-radius: 8px; padding: 7px 12px; font-size: 12px;
+    color: var(--accent2); cursor: pointer; transition: all 0.15s;
+    margin-top: 6px; width: 100%;
+  }
+  .gdrive-shortcut:hover { background: rgba(96,180,240,0.2); }
 </style>
 </head>
 <body>
@@ -1079,6 +1238,13 @@ window.addEventListener('DOMContentLoaded', function() {
       <div id="linkList"></div>
       <button class="add-link-btn" onclick="openLinkModal()">＋ 링크 추가</button>
     </div>
+
+    <!-- 스크랩북 -->
+    <div class="scrap-section">
+      <div class="sidebar-title">📎 스크랩북</div>
+      <div id="scrapList"></div>
+      <button class="add-link-btn" onclick="openScrapModal()" style="border-color:rgba(240,96,180,0.3);color:var(--accent3)">＋ 스크랩 추가</button>
+    </div>
   </aside>
 
   <!-- MAIN -->
@@ -1089,6 +1255,14 @@ window.addEventListener('DOMContentLoaded', function() {
         <span>＋</span> 태스크 추가
       </button>
     </div>
+    <!-- VIEW TABS -->
+    <div class="view-tabs">
+      <button class="view-tab active" id="tabList" onclick="switchView('list')">📋 태스크</button>
+      <button class="view-tab" id="tabCal" onclick="switchView('cal')">📅 캘린더</button>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="listView">
     <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input id="searchInput" placeholder="제목, 설명, 카테고리로 검색..." oninput="onSearch()">
@@ -1111,6 +1285,17 @@ window.addEventListener('DOMContentLoaded', function() {
       <div id="todayList"></div>
     </div>
     <div class="task-list" id="taskList"></div>
+    </div><!-- end listView -->
+
+    <!-- CALENDAR VIEW -->
+    <div class="calendar-wrap" id="calView">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calMove(-1)">‹</button>
+        <div class="cal-month" id="calMonth"></div>
+        <button class="cal-nav" onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
   </main>
 
   <!-- AI PANEL REMOVED -->
@@ -1167,6 +1352,51 @@ window.addEventListener('DOMContentLoaded', function() {
     <div id="meetingSavedSection" style="display:none">
       <div class="sidebar-title" style="margin-bottom:10px">저장된 회의록</div>
       <div class="meeting-saved-list" id="meetingSavedList"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- BRIEFING MODAL -->
+<div class="briefing-overlay" id="briefingOverlay">
+  <div class="briefing-modal">
+    <div class="briefing-greeting" id="briefingGreeting">좋은 아침입니다, 광민님 ✦</div>
+    <div class="briefing-date" id="briefingDate"></div>
+    <div class="briefing-section">
+      <div class="briefing-section-title">오늘의 현황</div>
+      <div class="briefing-stat-row" id="briefingStats"></div>
+    </div>
+    <div class="briefing-section">
+      <div class="briefing-section-title">오늘 할 일</div>
+      <div id="briefingTasks"></div>
+    </div>
+    <button class="briefing-close" onclick="closeBriefing()">지휘통제실 입장 →</button>
+  </div>
+</div>
+
+<!-- SCRAP MODAL -->
+<div class="scrap-modal-overlay" id="scrapModalOverlay">
+  <div class="scrap-modal">
+    <div class="modal-title" style="font-size:18px;margin-bottom:18px">📎 스크랩 추가</div>
+    <div class="form-row">
+      <div class="form-label">제목</div>
+      <input class="form-input" id="scrapTitle" placeholder="자료 제목">
+    </div>
+    <div class="form-row">
+      <div class="form-label">URL (선택)</div>
+      <input class="form-input" id="scrapUrl" placeholder="https://...">
+    </div>
+    <div class="form-row">
+      <div class="form-label">메모</div>
+      <textarea class="form-textarea" id="scrapNote" placeholder="간단한 메모..." style="min-height:60px"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-label">태그</div>
+      <input class="form-input" id="scrapTag" placeholder="예: 기획, 레퍼런스, 경쟁사">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeScrapModal()">취소</button>
+      <button class="btn-save" onclick="saveScrap()">저장</button>
     </div>
   </div>
 </div>
@@ -1272,6 +1502,19 @@ window.addEventListener('DOMContentLoaded', function() {
         <option value="weekly">매주 (같은 요일)</option>
         <option value="monthly">매월 (같은 날짜)</option>
       </select>
+    </div>
+    <!-- 링크 섹션 -->
+    <div class="modal-links-section">
+      <div class="form-label" style="margin-bottom:8px">🔗 관련 링크</div>
+      <div id="modalLinkList"></div>
+      <div class="modal-link-add-row">
+        <input class="modal-link-input" id="modalLinkInput" placeholder="URL 입력 (https://...)" onkeydown="if(event.key==='Enter'){event.preventDefault();addModalLink();}">
+        <input class="modal-link-input" id="modalLinkLabel" placeholder="링크 이름" style="max-width:120px" onkeydown="if(event.key==='Enter'){event.preventDefault();addModalLink();}">
+        <button class="modal-link-add-btn" onclick="addModalLink()">추가</button>
+      </div>
+      <button class="gdrive-shortcut" onclick="addGDriveLink()">
+        <span>📁</span> Google Drive 링크 추가
+      </button>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">취소</button>
@@ -1523,6 +1766,7 @@ function renderTasks() {
         <button onclick="openMemo('${t.id}',event)" style="background:transparent;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:color 0.15s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--muted)'">💬${t.memos&&t.memos.length?`<span class="memo-count">${t.memos.length}</span>`:''}</button>
         ${dateStr ? `<span class="due-date ${dueCls}">${dueLabel}</span>` : ''}
       </div>
+      ${t.links && t.links.length ? `<div class="task-links">${t.links.map(l => `<a class="task-link-chip" href="${l.url}" target="_blank" onclick="event.stopPropagation()"><span class="chip-icon">${getLinkIcon(l.url)}</span><span class="chip-label">${l.label||l.url}</span></a>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1589,6 +1833,8 @@ function openModal() {
   document.getElementById('fPriority').value = 'mid';
   document.getElementById('fCategory').value = 'work';
   document.getElementById('fRepeat').value = 'none';
+  modalLinks = [];
+  renderModalLinks();
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('fTitle').focus(), 100);
 }
@@ -1605,6 +1851,8 @@ function openEditModal(id) {
   document.getElementById('fPriority').value = t.priority;
   document.getElementById('fCategory').value = t.category;
   document.getElementById('fRepeat').value = t.repeat || 'none';
+  modalLinks = t.links ? [...t.links] : [];
+  renderModalLinks();
   document.getElementById('modalOverlay').classList.add('open');
 }
 
@@ -1625,6 +1873,7 @@ function saveTask() {
     category: document.getElementById('fCategory').value,
     repeat: document.getElementById('fRepeat').value,
     memos: [],
+    links: [...modalLinks],
     done: false,
     createdAt: new Date().toISOString()
   };
@@ -1632,6 +1881,7 @@ function saveTask() {
   if (editingId) {
     const idx = tasks.findIndex(t => t.id === editingId);
     task.done = tasks[idx].done;
+    task.memos = tasks[idx].memos || [];
     tasks[idx] = task;
   } else {
     tasks.unshift(task);
@@ -2163,6 +2413,210 @@ function renderMeetingSaved() {
     </div>`).join('');
 }
 
+
+// ─── VIEW TABS ───
+let currentView = 'list';
+function switchView(v) {
+  currentView = v;
+  document.getElementById('listView').style.display = v === 'list' ? 'block' : 'none';
+  document.getElementById('calView').classList.toggle('show', v === 'cal');
+  document.getElementById('tabList').classList.toggle('active', v === 'list');
+  document.getElementById('tabCal').classList.toggle('active', v === 'cal');
+  if (v === 'cal') renderCalendar();
+}
+
+// ─── CALENDAR ───
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+const DAY_LABELS = ['일','월','화','수','목','금','토'];
+
+function calMove(d) { calMonth += d; if (calMonth > 11){calMonth=0;calYear++;} if (calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+
+function renderCalendar() {
+  const todayStr = today();
+  document.getElementById('calMonth').textContent = `${calYear}년 ${calMonth+1}월`;
+  const grid = document.getElementById('calGrid');
+
+  // 요일 헤더
+  let html = DAY_LABELS.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const lastDate = new Date(calYear, calMonth+1, 0).getDate();
+  const prevLast = new Date(calYear, calMonth, 0).getDate();
+
+  // 이전 달 빈칸
+  for (let i = 0; i < firstDay; i++) {
+    const d = prevLast - firstDay + 1 + i;
+    html += `<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
+  }
+
+  // 이번 달
+  for (let d = 1; d <= lastDate; d++) {
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const dayTasks = tasks.filter(t => t.date === dateStr);
+    const hasTasks = dayTasks.length > 0;
+
+    const taskDots = dayTasks.slice(0,3).map(t =>
+      `<div class="cal-task-dot p-${t.priority} ${t.done?'done':''}">${t.title}</div>`
+    ).join('');
+
+    html += `<div class="cal-cell ${isToday?'today':''} ${hasTasks?'has-task':''}">
+      <div class="cal-date">${d}</div>
+      ${taskDots}
+      ${dayTasks.length > 3 ? `<div style="font-size:10px;color:var(--muted)">+${dayTasks.length-3}개</div>` : ''}
+    </div>`;
+  }
+
+  // 다음 달 빈칸
+  const total = firstDay + lastDate;
+  const remain = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= remain; i++) {
+    html += `<div class="cal-cell other-month"><div class="cal-date">${i}</div></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ─── BRIEFING ───
+function showBriefing() {
+  const now = new Date();
+  const h = now.getHours();
+  const greeting = h < 12 ? '좋은 아침입니다' : h < 18 ? '안녕하세요' : '수고 많으셨습니다';
+  document.getElementById('briefingGreeting').textContent = `${greeting}, 광민님 ✦`;
+
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('briefingDate').textContent =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})`;
+
+  const active = tasks.filter(t => !t.done);
+  const todayTasks = active.filter(isTodayDue);
+  const overdue = active.filter(isOverdue);
+
+  document.getElementById('briefingStats').innerHTML = `
+    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--accent)">${active.length}</div><div class="briefing-stat-lbl">진행중</div></div>
+    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--yellow)">${todayTasks.length}</div><div class="briefing-stat-lbl">오늘 마감</div></div>
+    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--red)">${overdue.length}</div><div class="briefing-stat-lbl">지연</div></div>
+  `;
+
+  const priColor = { high:'var(--red)', mid:'var(--yellow)', low:'var(--green)' };
+  const showTasks = [...overdue, ...todayTasks].slice(0, 5);
+  document.getElementById('briefingTasks').innerHTML = showTasks.length
+    ? showTasks.map(t => `<div class="briefing-task-item">
+        <div class="briefing-pri-dot" style="background:${priColor[t.priority]}"></div>
+        <span style="flex:1">${t.title}</span>
+        ${t.time ? `<span style="font-size:11px;color:var(--muted);font-family:monospace">${t.time}</span>` : ''}
+      </div>`).join('')
+    : '<div style="color:var(--muted);font-size:13px">오늘 마감 태스크가 없어요 🎉</div>';
+
+  document.getElementById('briefingOverlay').classList.add('open');
+}
+
+function closeBriefing() {
+  document.getElementById('briefingOverlay').classList.remove('open');
+  sessionStorage.setItem('briefing_shown', '1');
+}
+
+// ─── SCRAPBOOK ───
+let scraps = JSON.parse(localStorage.getItem('biseo_scraps') || '[]');
+function saveScraps() { localStorage.setItem('biseo_scraps', JSON.stringify(scraps)); }
+
+function openScrapModal() { document.getElementById('scrapModalOverlay').classList.add('open'); setTimeout(()=>document.getElementById('scrapTitle').focus(),100); }
+function closeScrapModal() {
+  document.getElementById('scrapModalOverlay').classList.remove('open');
+  ['scrapTitle','scrapUrl','scrapNote','scrapTag'].forEach(id => document.getElementById(id).value = '');
+}
+
+function saveScrap() {
+  const title = document.getElementById('scrapTitle').value.trim();
+  if (!title) return;
+  let url = document.getElementById('scrapUrl').value.trim();
+  if (url && !url.startsWith('http')) url = 'https://' + url;
+  scraps.unshift({
+    id: Date.now().toString(),
+    title, url,
+    note: document.getElementById('scrapNote').value.trim(),
+    tag: document.getElementById('scrapTag').value.trim(),
+    createdAt: new Date().toISOString()
+  });
+  saveScraps(); closeScrapModal(); renderScraps();
+}
+
+function deleteScrap(id) {
+  scraps = scraps.filter(s => s.id !== id);
+  saveScraps(); renderScraps();
+}
+
+function renderScraps() {
+  const list = document.getElementById('scrapList');
+  if (!list) return;
+  if (!scraps.length) { list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">스크랩이 없습니다.</div>'; return; }
+  list.innerHTML = scraps.map(s => `
+    <div class="scrap-item">
+      <button class="scrap-item-del" onclick="deleteScrap('${s.id}')">✕</button>
+      <div class="scrap-item-title">${s.title}</div>
+      ${s.url ? `<a class="scrap-item-url" href="${s.url}" target="_blank">${s.url}</a>` : ''}
+      ${s.note ? `<div class="scrap-item-note">${s.note}</div>` : ''}
+      ${s.tag ? `<span class="scrap-tag">${s.tag}</span>` : ''}
+    </div>`).join('');
+}
+
+document.getElementById('scrapModalOverlay').addEventListener('click', function(e) { if(e.target===this) closeScrapModal(); });
+document.getElementById('briefingOverlay').addEventListener('click', function(e) { if(e.target===this) closeBriefing(); });
+
+
+// ─── TASK LINKS ───
+let modalLinks = []; // 모달에서 임시 저장
+
+function getLinkIcon(url) {
+  if (!url) return '🔗';
+  if (url.includes('drive.google.com')) return '📁';
+  if (url.includes('docs.google.com')) return '📄';
+  if (url.includes('sheets.google.com')) return '📊';
+  if (url.includes('slides.google.com')) return '📑';
+  if (url.includes('notion.so')) return '📝';
+  if (url.includes('github.com')) return '💻';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return '▶️';
+  if (url.includes('figma.com')) return '🎨';
+  return '🔗';
+}
+
+function renderModalLinks() {
+  const list = document.getElementById('modalLinkList');
+  if (!list) return;
+  if (!modalLinks.length) { list.innerHTML = ''; return; }
+  list.innerHTML = modalLinks.map((l, i) => `
+    <div class="modal-link-item">
+      <span class="modal-link-item-icon">${getLinkIcon(l.url)}</span>
+      <span class="modal-link-item-label">${l.label || l.url}</span>
+      <button class="modal-link-item-del" onclick="removeModalLink(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addModalLink() {
+  let url = document.getElementById('modalLinkInput').value.trim();
+  const label = document.getElementById('modalLinkLabel').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) url = 'https://' + url;
+  modalLinks.push({ url, label: label || '' });
+  document.getElementById('modalLinkInput').value = '';
+  document.getElementById('modalLinkLabel').value = '';
+  renderModalLinks();
+}
+
+function addGDriveLink() {
+  const url = prompt('Google Drive 파일/폴더 링크를 붙여넣으세요:');
+  if (!url) return;
+  const label = prompt('링크 이름 (예: Q1 보고서):', '');
+  modalLinks.push({ url: url.trim(), label: label || 'Google Drive' });
+  renderModalLinks();
+}
+
+function removeModalLink(idx) {
+  modalLinks.splice(idx, 1);
+  renderModalLinks();
+}
+
 // ─── MOBILE NAV ───
 initNotifBtn();
 function mobileTab(tab) {
@@ -2186,7 +2640,13 @@ function mobileTab(tab) {
 initPin();
 renderStickies();
 renderLinks();
-loadTasks();
+renderScraps();
+loadTasks().then(() => {
+  // 하루 한 번 브리핑 표시
+  if (!sessionStorage.getItem('briefing_shown')) {
+    setTimeout(showBriefing, 800);
+  }
+});
 </script>
 </body>
 </html>
