@@ -2,2651 +2,937 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="theme-color" content="#0e0f13">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="지휘통제실">
-<link rel="manifest" id="manifestLink">
-<script>
-// PWA manifest 동적 생성
-window.addEventListener('DOMContentLoaded', function() {
-  const svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="22" fill="#0e0f13"/><text y=".9em" font-size="72" x="12">📋</text></svg>';
-  const iconUrl = 'data:image/svg+xml,' + encodeURIComponent(svgIcon);
-  const manifest = { name: '김광민의 지휘통제실', short_name: '김광민의 지휘통제실', start_url: './', display: 'standalone', background_color: '#0e0f13', theme_color: '#0e0f13', icons: [{ src: iconUrl, sizes: '192x192', type: 'image/svg+xml' }] };
-  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-  const link = document.getElementById('manifestLink');
-  if (link) link.href = URL.createObjectURL(blob);
-});
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>김광민의 지휘통제실</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0e0f13">
+<title>표적 작전 — 3D FPS</title>
 <style>
   :root {
     --bg: #0e0f13;
-    --surface: #16181f;
-    --surface2: #1e2029;
-    --border: #2a2d38;
     --accent: #c8f060;
     --accent2: #60b4f0;
-    --accent3: #f060b4;
-    --text: #e8eaf0;
-    --muted: #6b7080;
     --red: #f06060;
     --yellow: #f0c060;
-    --green: #60f0a0;
+    --text: #e8eaf0;
+    --muted: #8b90a0;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
   body {
-    background: var(--bg);
+    font-family: 'Segoe UI', 'Noto Sans KR', system-ui, sans-serif;
     color: var(--text);
-    font-family: 'Noto Sans KR', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* HEADER */
-  header {
-    padding: 20px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .logo {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--accent);
-    letter-spacing: -0.5px;
-  }
-  .logo span { color: var(--muted); font-style: italic; }
-  .header-date {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  /* LAYOUT */
-  .layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    flex: 1;
-    height: calc(100vh - 61px);
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    border-right: 1px solid var(--border);
-    padding: 24px 20px;
-    overflow-y: auto;
-    background: var(--surface);
-  }
-  .sidebar-title {
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    font-weight: 500;
-  }
-  .stat-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .stat-card:hover::before, .stat-card.active::before { opacity: 1; }
-  .stat-card:hover { border-color: var(--accent); transform: translateX(3px); }
-  .stat-card.active { border-color: var(--accent); background: rgba(200,240,96,0.05); }
-  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .stat-num { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .stat-num.urgent { color: var(--red); }
-  .stat-num.today { color: var(--yellow); }
-  .stat-num.total { color: var(--accent); }
-  .stat-num.done { color: var(--green); }
-
-  .filter-section { margin-top: 24px; }
-  .filter-btn {
-    width: 100%;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    padding: 9px 14px;
-    font-size: 13px;
-    text-align: left;
-    cursor: pointer;
-    margin-bottom: 6px;
-    transition: all 0.15s;
-    font-family: 'Noto Sans KR', sans-serif;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .filter-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  .filter-btn.active { border-color: var(--accent2); background: rgba(96,180,240,0.08); color: var(--accent2); }
-  .filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  /* MAIN */
-  .main {
-    overflow-y: auto;
-    padding: 28px 28px;
-  }
-  .main-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-  }
-  .main-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 28px;
-    color: var(--text);
-  }
-  .add-btn {
-    background: var(--accent);
-    color: #0e0f13;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'Noto Sans KR', sans-serif;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .add-btn:hover { background: #d8ff70; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(200,240,96,0.3); }
-
-  /* TASK CARDS */
-  .task-list { display: flex; flex-direction: column; gap: 10px; }
-  .task-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 16px 18px;
-    transition: all 0.2s;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-  }
-  .task-card::after {
-    content: '';
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 3px;
-    border-radius: 0 12px 12px 0;
-  }
-  .task-card.p-high::after { background: var(--red); }
-  .task-card.p-mid::after { background: var(--yellow); }
-  .task-card.p-low::after { background: var(--green); }
-  .task-card:hover { border-color: var(--border); background: var(--surface2); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
-  .task-card.done { opacity: 0.4; }
-  .task-card.done .task-title { text-decoration: line-through; }
-
-  .task-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
-  .task-check {
-    width: 20px; height: 20px;
-    border: 2px solid var(--border);
-    border-radius: 6px;
-    cursor: pointer;
-    flex-shrink: 0;
-    margin-top: 2px;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s;
-  }
-  .task-check:hover { border-color: var(--accent); }
-  .task-check.checked { background: var(--accent); border-color: var(--accent); }
-  .task-check.checked::after { content: '✓'; font-size: 12px; color: #0e0f13; font-weight: 700; }
-  .task-title { font-size: 15px; font-weight: 500; flex: 1; line-height: 1.4; }
-  .task-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .tag {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-  }
-  .tag-work { background: rgba(96,180,240,0.15); color: var(--accent2); }
-  .tag-personal { background: rgba(240,96,180,0.15); color: var(--accent3); }
-  .tag-study { background: rgba(200,240,96,0.15); color: var(--accent); }
-  .tag-other { background: rgba(107,112,128,0.2); color: var(--muted); }
-  .priority-badge {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 600;
-  }
-  .p-high-badge { background: rgba(240,96,96,0.15); color: var(--red); }
-  .p-mid-badge { background: rgba(240,192,96,0.15); color: var(--yellow); }
-  .p-low-badge { background: rgba(96,240,160,0.15); color: var(--green); }
-  .due-date {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-left: auto;
-  }
-  .due-date.overdue { color: var(--red); }
-  .due-date.soon { color: var(--yellow); }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 200;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    width: 480px;
-    transform: translateY(20px);
-    transition: transform 0.2s;
-  }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    margin-bottom: 22px;
-  }
-  .form-row { margin-bottom: 16px; }
-  .form-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
-  .form-input, .form-select, .form-textarea {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    padding: 10px 14px;
-    font-size: 14px;
-    font-family: 'Noto Sans KR', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
-  .form-select option { background: var(--surface2); }
-  .form-textarea { resize: vertical; min-height: 80px; }
-  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
-  .btn-cancel {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    border-radius: 8px;
-    padding: 10px 20px;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px;
-    transition: all 0.15s;
-  }
-  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
-  .btn-save {
-    background: var(--accent);
-    color: #0e0f13;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 24px;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px;
-    transition: all 0.15s;
-  }
-  .btn-save:hover { background: #d8ff70; }
-
-  /* AI PANEL */
-  .ai-panel {
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-  }
-  .ai-panel-header {
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .ai-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-  }
-  .ai-label { font-size: 14px; font-weight: 600; }
-  .ai-sublabel { font-size: 11px; color: var(--muted); }
-
-  .ai-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .msg {
-    max-width: 100%;
-    font-size: 13px;
-    line-height: 1.6;
-  }
-  .msg-user {
-    background: rgba(200,240,96,0.1);
-    border: 1px solid rgba(200,240,96,0.2);
-    border-radius: 12px 12px 4px 12px;
-    padding: 10px 14px;
-    color: var(--accent);
-    align-self: flex-end;
-    max-width: 85%;
-  }
-  .msg-ai {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px 12px 12px 4px;
-    padding: 12px 14px;
-    color: var(--text);
-    white-space: pre-wrap;
-  }
-  .msg-ai .ai-thinking {
-    color: var(--muted);
-    font-style: italic;
-    font-size: 12px;
-  }
-
-  .ai-input-area {
-    padding: 14px;
-    border-top: 1px solid var(--border);
-  }
-  .ai-quick-btns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .quick-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--muted);
-    font-size: 11px;
-    padding: 5px 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-  .quick-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  .ai-input-row { display: flex; gap: 8px; }
-  .ai-input {
-    flex: 1;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    padding: 10px 14px;
-    font-size: 13px;
-    font-family: 'Noto Sans KR', sans-serif;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .ai-input:focus { border-color: var(--accent); }
-  .ai-send {
-    background: var(--accent);
-    color: #0e0f13;
-    border: none;
-    border-radius: 10px;
-    width: 40px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .ai-send:hover { background: #d8ff70; }
-  .ai-send:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--muted);
-  }
-  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state p { font-size: 14px; line-height: 1.6; }
-
-  /* Delete btn */
-  .task-delete {
-    position: absolute;
-    top: 12px; right: 16px;
-    background: transparent;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 16px;
-    opacity: 0;
-    transition: opacity 0.15s;
-    padding: 2px;
-  }
-  .task-card:hover .task-delete { opacity: 1; }
-  .task-delete:hover { color: var(--red); }
-
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-
-  /* SEARCH */
-  .search-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    transition: border-color 0.15s;
-  }
-  .search-bar:focus-within { border-color: var(--accent); }
-  .search-bar input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-size: 14px;
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-  .search-bar input::placeholder { color: var(--muted); }
-  .search-icon { color: var(--muted); font-size: 16px; }
-  .search-count { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
-  .highlight { background: rgba(200,240,96,0.3); border-radius: 3px; padding: 0 2px; }
-
-  /* TODAY BANNER */
-  .today-banner {
-    background: linear-gradient(135deg, rgba(240,192,96,0.12), rgba(240,96,96,0.08));
-    border: 1px solid rgba(240,192,96,0.3);
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 16px;
-    display: none;
-  }
-  .today-banner.show { display: block; }
-  .today-banner-title {
-    font-size: 12px;
-    color: var(--yellow);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-  .today-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: 13px;
-  }
-  .today-item:last-child { border-bottom: none; }
-  .today-item .t-pri { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .today-item .t-title { flex: 1; }
-  .today-item .t-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
-
-  /* PRIORITY DRAG */
-  .drag-handle {
-    cursor: grab;
-    color: var(--muted);
-    font-size: 14px;
-    padding: 0 4px;
-    opacity: 0;
-    transition: opacity 0.15s;
     user-select: none;
+    -webkit-user-select: none;
   }
-  .task-card:hover .drag-handle { opacity: 1; }
-  .task-card.dragging { opacity: 0.4; border: 2px dashed var(--accent); }
-  .task-card.drag-over { border-color: var(--accent2); background: rgba(96,180,240,0.05); }
+  canvas { display: block; }
 
-  /* PRIORITY QUICK CHANGE */
-  .pri-toggle {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 13px;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background 0.15s;
+  /* ===== HUD ===== */
+  #hud {
+    position: fixed; inset: 0; pointer-events: none; z-index: 10;
   }
-  .pri-toggle:hover { background: rgba(255,255,255,0.08); }
-
-  /* ── MOBILE ── */
-  @media (max-width: 768px) {
-    header { padding: 14px 16px; }
-    .logo { font-size: 18px; }
-    .header-date { display: none; }
-
-    .layout {
-      grid-template-columns: 1fr;
-      height: calc(100vh - 57px);
-    }
-    .sidebar, .ai-panel {
-      display: none;
-      position: fixed;
-      top: 57px; left: 0; right: 0; bottom: 57px;
-      z-index: 50;
-      border: none;
-      overflow-y: auto;
-    }
-    .sidebar.mobile-open {
-      display: block;
-      background: var(--surface);
-      padding: 20px 16px;
-    }
-    .ai-panel.mobile-open {
-      display: flex;
-      flex-direction: column;
-    }
-    .main { padding: 16px; padding-bottom: 80px; }
-    .main-header { margin-bottom: 16px; }
-    .main-title { font-size: 22px; }
-    .add-btn { padding: 9px 14px; font-size: 13px; }
-    .form-row-2 { grid-template-columns: 1fr; }
-    .modal { width: calc(100vw - 32px); padding: 20px; }
-    .task-delete { opacity: 1; }
-
-    .mobile-nav {
-      display: flex;
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 57px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      z-index: 100;
-    }
-    .mobile-nav-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: 11px;
-      font-family: 'Noto Sans KR', sans-serif;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      transition: color 0.15s;
-    }
-    .mobile-nav-btn .nav-icon { font-size: 20px; }
-    .mobile-nav-btn.active { color: var(--accent); }
+  /* crosshair */
+  #crosshair {
+    position: absolute; top: 50%; left: 50%;
+    width: 26px; height: 26px;
+    transform: translate(-50%, -50%);
+    transition: transform .08s ease;
   }
+  #crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: var(--accent);
+    box-shadow: 0 0 4px rgba(200,240,96,.8);
+  }
+  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+  #crosshair::after  { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
+  #crosshair .dot {
+    position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
+    background: var(--accent); border-radius: 50%; transform: translate(-50%,-50%);
+  }
+  #crosshair.shoot { transform: translate(-50%,-50%) scale(1.6); }
 
-  @media (min-width: 769px) {
-    .mobile-nav { display: none; }
+  /* top stats */
+  .stat-bar {
+    position: absolute; top: 22px; display: flex; flex-direction: column; gap: 6px;
+  }
+  #leftStats { left: 28px; }
+  #rightStats { right: 28px; text-align: right; align-items: flex-end; }
+  .stat-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
+  #scoreVal { color: var(--accent); }
+  #waveVal { color: var(--accent2); }
+
+  /* health & ammo bottom */
+  #bottomBar {
+    position: absolute; bottom: 26px; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 0 32px;
+  }
+  #healthWrap { width: 240px; }
+  #healthLabel { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
+  #healthBarBg {
+    height: 14px; background: #1e2029; border: 1px solid #2a2d38; border-radius: 8px; overflow: hidden;
+  }
+  #healthBar {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #60f0a0, #c8f060);
+    transition: width .2s ease, background .3s ease;
+  }
+  #ammoWrap { text-align: right; }
+  #ammoLabel { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-bottom: 4px; }
+  #ammoVal { font-size: 38px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #ammoVal .mag { color: var(--muted); font-size: 22px; }
+  #reloadHint { font-size: 12px; color: var(--yellow); height: 16px; margin-top: 2px; }
+
+  /* hit marker */
+  #hitMarker {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.6);
+    width: 30px; height: 30px; opacity: 0; transition: opacity .12s, transform .12s;
+  }
+  #hitMarker::before, #hitMarker::after {
+    content: ''; position: absolute; top: 50%; left: 50%; width: 12px; height: 3px; background: #fff;
+  }
+  #hitMarker::before { transform: translate(-50%,-50%) rotate(45deg); }
+  #hitMarker::after  { transform: translate(-50%,-50%) rotate(-45deg); }
+  #hitMarker.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+
+  /* damage vignette */
+  #damageVignette {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    box-shadow: inset 0 0 160px 40px rgba(240,60,60,.8);
+    transition: opacity .35s ease;
   }
 
-  /* ── 태블릿 최적화 ── */
-  @media (min-width: 769px) and (max-width: 1100px) {
-    .layout { grid-template-columns: 240px 1fr; }
-    .sidebar { padding: 20px 14px; }
-    .main { padding: 20px; }
-    .stat-num { font-size: 22px; }
-    .modal { width: 520px; }
-    header { padding: 16px 24px; }
-    .task-card { padding: 14px 16px; }
-    /* 태블릿도 터치 최적화 */
-    * { -webkit-tap-highlight-color: transparent; }
-    .task-check { width: 24px; height: 24px; }
-    .filter-btn { padding: 11px 14px; }
-    .pin-btn { padding: 18px; }
+  /* ===== Overlays ===== */
+  .overlay {
+    position: fixed; inset: 0; z-index: 20;
+    background: radial-gradient(circle at 50% 40%, rgba(20,22,30,.86), rgba(8,9,13,.97));
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    backdrop-filter: blur(4px);
   }
-
-  /* 모바일 추가 최적화 */
-  @media (max-width: 768px) {
-    /* 부드러운 스크롤 */
-    .main, .sidebar { -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
-    /* 버튼 탭 영역 충분히 확보 */
-    .task-check { width: 26px; height: 26px; }
-    .task-delete { width: 32px; height: 32px; font-size: 14px; display:flex;align-items:center;justify-content:center; }
-    .filter-btn { padding: 12px 14px; }
-    .stat-card { padding: 16px; }
-    /* 모달 하단 여백 */
-    .modal { max-height: 90vh; overflow-y: auto; }
-    /* 핀 버튼 터치 영역 */
-    .pin-btn { padding: 18px; min-height: 58px; }
-  }
-
-  /* CHART MODAL */
-  .chart-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .chart-modal-overlay.open { opacity: 1; pointer-events: all; }
-  .chart-modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    width: 520px; max-width: calc(100vw - 32px);
-    transform: translateY(20px); transition: transform 0.2s;
-  }
-  .chart-modal-overlay.open .chart-modal { transform: translateY(0); }
-  .chart-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 20px; }
-  .chart-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-  .chart-label { font-size: 12px; color: var(--muted); width: 60px; flex-shrink: 0; }
-  .chart-bar-bg { flex: 1; background: var(--surface2); border-radius: 6px; height: 10px; overflow: hidden; }
-  .chart-bar { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
-  .chart-val { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); width: 36px; text-align: right; }
-  .chart-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-  .chart-stat { background: var(--surface2); border-radius: 10px; padding: 12px; text-align: center; }
-  .chart-stat-num { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .chart-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  .chart-section-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 16px 0 10px; }
-
-  /* MEMO PANEL */
-  .memo-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .memo-overlay.open { opacity: 1; pointer-events: all; }
-  .memo-modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    width: 460px; max-width: calc(100vw - 32px);
-    transform: translateY(20px); transition: transform 0.2s;
-  }
-  .memo-overlay.open .memo-modal { transform: translateY(0); }
-  .memo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .memo-task-title { font-size: 15px; font-weight: 600; }
-  .memo-list { max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
-  .memo-item { background: var(--surface2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; line-height: 1.5; position: relative; }
-  .memo-item-time { font-size: 10px; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
-  .memo-item-del { position: absolute; top: 8px; right: 10px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; }
-  .memo-item-del:hover { color: var(--red); }
-  .memo-input-row { display: flex; gap: 8px; }
-  .memo-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 9px 12px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; outline: none; }
-  .memo-input:focus { border-color: var(--accent); }
-  .memo-send { background: var(--accent); color: #0e0f13; border: none; border-radius: 8px; padding: 9px 16px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; }
-  .memo-count { display: inline-block; background: var(--accent2); color: #0e0f13; border-radius: 10px; font-size: 10px; font-weight: 700; padding: 1px 6px; margin-left: 4px; vertical-align: middle; }
-
-  /* NOTIFICATION BADGE */
-  .notif-btn { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 6px 12px; font-size: 12px; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
-  .notif-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .notif-btn.enabled { border-color: var(--green); color: var(--green); }
-
-  /* MOBILE TOUCH OPTIMIZE */
-  * { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-  input, textarea, select, button { font-size: 16px !important; } /* iOS 자동확대 방지 */
-  @media (max-width: 768px) {
-    input, textarea, select { font-size: 16px !important; }
-  }
-
-  /* PIN LOCK */
-  .pin-overlay {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999;
-    flex-direction: column;
-    gap: 24px;
-  }
-  .pin-overlay.hidden { display: none; }
-  .pin-logo { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); }
-  .pin-logo span { color: var(--muted); font-style: italic; }
-  .pin-subtitle { font-size: 13px; color: var(--muted); margin-top: -16px; }
-  .pin-dots { display: flex; gap: 14px; }
-  .pin-dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    transition: all 0.15s;
-  }
-  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
-  .pin-dot.error { background: var(--red); border-color: var(--red); }
-  .pin-pad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    width: 240px;
-  }
-  .pin-btn {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text);
-    font-size: 20px;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-  .pin-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
-  .pin-btn:active { transform: scale(0.94); }
-  .pin-btn.del { font-size: 16px; color: var(--muted); }
-  .pin-btn.empty { background: transparent; border: none; cursor: default; }
-  .pin-error { font-size: 12px; color: var(--red); height: 16px; text-align: center; }
-  .pin-change-link { font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; margin-top: -8px; }
-  .pin-change-link:hover { color: var(--accent); }
-
-  /* ── PIN MEMO ── */
-  .pin-memo-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 12px;
-    padding: 16px 18px;
-    margin-bottom: 16px;
-    position: relative;
-  }
-  .pin-memo-header {
-    display: flex; align-items: center; gap: 8px;
+  .overlay.hidden { display: none; }
+  .title {
+    font-size: 64px; font-weight: 800; letter-spacing: 4px; line-height: 1;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
     margin-bottom: 10px;
   }
-  .pin-memo-icon { font-size: 13px; }
-  .pin-memo-label { font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 1.5px; text-transform: uppercase; flex: 1; }
-  .pin-memo-clear {
-    background: transparent; border: none; cursor: pointer;
-    color: var(--muted); font-size: 11px; padding: 2px 6px;
-    border-radius: 4px; font-family: 'Noto Sans KR', sans-serif;
-    transition: color 0.15s;
+  .subtitle { color: var(--muted); font-size: 16px; letter-spacing: 3px; margin-bottom: 36px; }
+  .btn {
+    pointer-events: auto; cursor: pointer;
+    background: var(--accent); color: #0e0f13; border: none;
+    font-size: 18px; font-weight: 700; letter-spacing: 1px;
+    padding: 16px 48px; border-radius: 12px;
+    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 8px 30px rgba(200,240,96,.3);
   }
-  .pin-memo-clear:hover { color: var(--red); }
-  .pin-memo-textarea {
-    width: 100%; background: transparent; border: none; outline: none;
-    resize: none; color: var(--text); font-size: 14px;
-    font-family: 'Noto Sans KR', sans-serif;
-    line-height: 1.8; min-height: 100px;
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200,240,96,.45); }
+  .btn:active { transform: translateY(0); }
+  .controls {
+    margin-top: 40px; display: grid; grid-template-columns: auto auto;
+    gap: 10px 28px; font-size: 14px; color: var(--muted);
   }
-  .pin-memo-textarea::placeholder { color: var(--muted); font-size: 13px; }
+  .controls b { color: var(--text); font-weight: 600; }
+  .controls .key {
+    display: inline-block; background: #1e2029; border: 1px solid #2a2d38;
+    border-radius: 6px; padding: 2px 10px; color: var(--accent); font-family: monospace;
+  }
+  #finalScore { font-size: 22px; color: var(--accent); margin-bottom: 8px; }
+  #finalWave { font-size: 15px; color: var(--muted); margin-bottom: 32px; }
+  #pauseHint { position: absolute; bottom: 28px; font-size: 13px; color: var(--muted); }
 
-  /* ── QUICK LINKS ── */
-  .links-section { margin-top: 24px; }
-  .link-item {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 12px;
-    margin-bottom: 6px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-decoration: none;
-    position: relative;
-  }
-  .link-item:hover { border-color: var(--accent2); transform: translateX(3px); }
-  .link-favicon { width: 16px; height: 16px; border-radius: 3px; object-fit: cover; flex-shrink: 0; }
-  .link-name { font-size: 13px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .link-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; opacity: 0; transition: opacity 0.15s; padding: 0 2px; }
-  .link-item:hover .link-del { opacity: 1; }
-  .link-del:hover { color: var(--red); }
-  .add-link-btn {
-    width: 100%;
-    background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    padding: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: all 0.15s;
-    margin-top: 4px;
-  }
-  .add-link-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-
-  /* LINK ADD MODAL */
-  .link-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
+  /* loading */
+  #loading {
+    position: fixed; inset: 0; z-index: 30; background: var(--bg);
     display: flex; align-items: center; justify-content: center;
-    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    color: var(--muted); font-size: 14px; letter-spacing: 3px;
   }
-  .link-modal-overlay.open { opacity: 1; pointer-events: all; }
-  .link-modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 24px;
-    width: 380px; max-width: calc(100vw - 32px);
-    transform: translateY(16px); transition: transform 0.2s;
+  /* wave announce */
+  #waveAnnounce {
+    position: fixed; top: 32%; left: 50%; transform: translateX(-50%);
+    z-index: 15; text-align: center; pointer-events: none; opacity: 0;
+    transition: opacity .4s ease;
   }
-  .link-modal-overlay.open .link-modal { transform: translateY(0); }
-
-  /* ── MEETING NOTES ── */
-  .meeting-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    padding: 6px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    display: flex; align-items: center; gap: 6px;
-    transition: all 0.15s;
-  }
-  .meeting-btn:hover { border-color: var(--accent3); color: var(--accent3); }
-
-  .meeting-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .meeting-overlay.open { opacity: 1; pointer-events: all; }
-  .meeting-modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
-    width: 600px; max-width: calc(100vw - 32px);
-    max-height: 85vh;
-    overflow-y: auto;
-    transform: translateY(20px); transition: transform 0.2s;
-    display: flex; flex-direction: column; gap: 16px;
-  }
-  .meeting-overlay.open .meeting-modal { transform: translateY(0); }
-  .meeting-header { display: flex; align-items: center; justify-content: space-between; }
-  .meeting-title { font-family: 'DM Serif Display', serif; font-size: 20px; }
-
-  .meeting-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .rec-btn {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 20px; border-radius: 10px; border: none;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif; transition: all 0.2s;
-  }
-  .rec-btn.start { background: var(--accent3); color: white; }
-  .rec-btn.start:hover { background: #ff70c8; }
-  .rec-btn.stop { background: var(--red); color: white; }
-  .rec-btn.stop:hover { background: #ff7070; }
-  .rec-btn.pause { background: var(--yellow); color: #0e0f13; }
-
-  .rec-status {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; color: var(--muted);
-  }
-  .rec-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--muted);
-  }
-  .rec-dot.recording { background: var(--red); animation: blink 1s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .meeting-transcript {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    min-height: 200px;
-    max-height: 300px;
-    overflow-y: auto;
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--text);
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .meeting-transcript.empty { color: var(--muted); font-style: italic; }
-
-  .meeting-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-  .meeting-save-btn {
-    background: var(--accent);
-    color: #0e0f13;
-    border: none; border-radius: 8px;
-    padding: 10px 20px; font-weight: 700;
-    cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px; transition: all 0.15s;
-  }
-  .meeting-save-btn:hover { background: #d8ff70; }
-  .meeting-copy-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px; color: var(--muted);
-    padding: 10px 20px; cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px; transition: all 0.15s;
-  }
-  .meeting-copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  .meeting-clear-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px; color: var(--muted);
-    padding: 10px 20px; cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    font-size: 14px; transition: all 0.15s;
-    margin-left: auto;
-  }
-  .meeting-clear-btn:hover { border-color: var(--red); color: var(--red); }
-
-  .meeting-saved-list { display: flex; flex-direction: column; gap: 8px; }
-  .meeting-saved-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    font-size: 13px;
-  }
-  .meeting-saved-item-header {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 6px;
-  }
-  .meeting-saved-item-date { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-  .meeting-saved-item-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; }
-  .meeting-saved-item-del:hover { color: var(--red); }
-  .meeting-saved-item-text { color: var(--text); line-height: 1.6; max-height: 80px; overflow: hidden; text-overflow: ellipsis; }
-  .meeting-lang-select {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    padding: 8px 12px;
-    font-size: 13px;
-    font-family: 'Noto Sans KR', sans-serif;
-    outline: none;
-    cursor: pointer;
-  }
-
-  /* ── VIEW TABS ── */
-  .view-tabs {
-    display: flex; gap: 4px;
-    background: var(--surface2);
-    border-radius: 10px;
-    padding: 4px;
-    margin-bottom: 20px;
-  }
-  .view-tab {
-    flex: 1; padding: 8px 12px;
-    background: transparent; border: none;
-    border-radius: 7px; color: var(--muted);
-    font-size: 13px; font-weight: 500;
-    cursor: pointer; transition: all 0.15s;
-    font-family: 'Noto Sans KR', sans-serif;
-  }
-  .view-tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-  .view-tab:hover:not(.active) { color: var(--text); }
-
-  /* ── CALENDAR ── */
-  .calendar-wrap { display: none; }
-  .calendar-wrap.show { display: block; }
-  .cal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .cal-nav { background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 14px; cursor: pointer; font-size: 16px; transition: all 0.15s; }
-  .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
-  .cal-month { font-family: 'DM Serif Display', serif; font-size: 20px; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-day-label { text-align: center; font-size: 11px; color: var(--muted); padding: 6px 0; font-weight: 600; }
-  .cal-day-label:first-child { color: #f06060; }
-  .cal-day-label:last-child { color: var(--accent2); }
-  .cal-cell {
-    min-height: 70px; background: var(--surface2);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 6px; cursor: pointer; transition: all 0.15s;
-    position: relative;
-  }
-  .cal-cell:hover { border-color: var(--accent); }
-  .cal-cell.today { border-color: var(--accent); background: rgba(200,240,96,0.05); }
-  .cal-cell.other-month { opacity: 0.3; }
-  .cal-cell.has-task::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
-  .cal-date { font-size: 12px; font-weight: 600; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
-  .cal-cell.today .cal-date { color: var(--accent); }
-  .cal-task-dot {
-    font-size: 10px; padding: 2px 5px;
-    border-radius: 4px; margin-bottom: 2px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    line-height: 1.4;
-  }
-  .cal-task-dot.p-high { background: rgba(240,96,96,0.2); color: var(--red); }
-  .cal-task-dot.p-mid { background: rgba(240,192,96,0.2); color: var(--yellow); }
-  .cal-task-dot.p-low { background: rgba(96,240,160,0.2); color: var(--green); }
-  .cal-task-dot.done { opacity: 0.4; text-decoration: line-through; }
-
-  /* ── BRIEFING MODAL ── */
-  .briefing-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.8);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 400; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-  }
-  .briefing-overlay.open { opacity: 1; pointer-events: all; }
-  .briefing-modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px; padding: 32px;
-    width: 520px; max-width: calc(100vw - 32px);
-    transform: translateY(24px); transition: transform 0.3s;
-  }
-  .briefing-overlay.open .briefing-modal { transform: translateY(0); }
-  .briefing-greeting { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 6px; }
-  .briefing-date { font-size: 13px; color: var(--muted); margin-bottom: 24px; font-family: 'JetBrains Mono', monospace; }
-  .briefing-section { margin-bottom: 20px; }
-  .briefing-section-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
-  .briefing-weather { display: flex; align-items: center; gap: 12px; font-size: 14px; }
-  .briefing-weather-icon { font-size: 32px; }
-  .briefing-weather-info { line-height: 1.6; }
-  .briefing-task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .briefing-task-item:last-child { border-bottom: none; }
-  .briefing-pri-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .briefing-close { width: 100%; background: var(--accent); color: #0e0f13; border: none; border-radius: 10px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; margin-top: 8px; transition: all 0.15s; }
-  .briefing-close:hover { background: #d8ff70; }
-  .briefing-stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-  .briefing-stat { background: var(--surface2); border-radius: 10px; padding: 12px; text-align: center; }
-  .briefing-stat-num { font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .briefing-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
-
-  /* ── SCRAPBOOK ── */
-  .scrap-section { margin-top: 24px; }
-  .scrap-item {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
-    transition: all 0.15s; position: relative;
-  }
-  .scrap-item:hover { border-color: var(--accent3); }
-  .scrap-item-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; color: var(--text); }
-  .scrap-item-url { font-size: 11px; color: var(--accent2); cursor: pointer; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-  .scrap-item-url:hover { text-decoration: underline; }
-  .scrap-item-note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
-  .scrap-item-del { position: absolute; top: 8px; right: 10px; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 12px; opacity: 0; transition: opacity 0.15s; }
-  .scrap-item:hover .scrap-item-del { opacity: 1; }
-  .scrap-item-del:hover { color: var(--red); }
-  .scrap-tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 10px; background: rgba(240,96,180,0.15); color: var(--accent3); margin-top: 4px; }
-
-  /* SCRAP MODAL */
-  .scrap-modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .scrap-modal-overlay.open { opacity: 1; pointer-events: all; }
-  .scrap-modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; padding: 24px;
-    width: 400px; max-width: calc(100vw - 32px);
-    transform: translateY(16px); transition: transform 0.2s;
-  }
-  .scrap-modal-overlay.open .scrap-modal { transform: translateY(0); }
-
-  /* ── TASK LINKS ── */
-  .task-links { margin: 8px 0 4px 32px; display: flex; flex-wrap: wrap; gap: 6px; }
-  .task-link-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 3px 10px;
-    font-size: 11px; color: var(--accent2);
-    text-decoration: none; transition: all 0.15s; max-width: 180px;
-  }
-  .task-link-chip:hover { border-color: var(--accent2); background: rgba(96,180,240,0.1); }
-  .task-link-chip .chip-icon { font-size: 12px; flex-shrink: 0; }
-  .task-link-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* 모달 링크 섹션 */
-  .modal-links-section { margin-top: 16px; }
-  .modal-link-item {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;
-  }
-  .modal-link-item-icon { font-size: 14px; flex-shrink: 0; }
-  .modal-link-item-label { flex: 1; font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .modal-link-item-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; transition: color 0.15s; }
-  .modal-link-item-del:hover { color: var(--red); }
-  .modal-link-add-row { display: flex; gap: 6px; margin-top: 8px; }
-  .modal-link-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 12px; font-size: 13px; font-family: 'Noto Sans KR', sans-serif; outline: none; }
-  .modal-link-input:focus { border-color: var(--accent2); }
-  .modal-link-add-btn { background: var(--accent2); color: #0e0f13; border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; white-space: nowrap; }
-  .modal-link-add-btn:hover { background: #70c4ff; }
-  .gdrive-shortcut {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(96,180,240,0.1); border: 1px solid rgba(96,180,240,0.3);
-    border-radius: 8px; padding: 7px 12px; font-size: 12px;
-    color: var(--accent2); cursor: pointer; transition: all 0.15s;
-    margin-top: 6px; width: 100%;
-  }
-  .gdrive-shortcut:hover { background: rgba(96,180,240,0.2); }
+  #waveAnnounce.show { opacity: 1; }
+  #waveAnnounce .big { font-size: 52px; font-weight: 800; color: var(--accent2); letter-spacing: 4px; }
+  #waveAnnounce .small { font-size: 16px; color: var(--muted); letter-spacing: 2px; }
 </style>
 </head>
 <body>
 
-<!-- PIN LOCK -->
-<div class="pin-overlay" id="pinOverlay">
-  <div class="pin-logo">지휘통제실<span> by 김광민</span></div>
-  <div class="pin-subtitle">PIN을 입력하세요</div>
-  <div class="pin-dots">
-    <div class="pin-dot" id="pd0"></div>
-    <div class="pin-dot" id="pd1"></div>
-    <div class="pin-dot" id="pd2"></div>
-    <div class="pin-dot" id="pd3"></div>
+<div id="loading">로딩 중…</div>
+
+<!-- HUD -->
+<div id="hud" style="display:none">
+  <div id="crosshair"><span class="dot"></span></div>
+  <div id="hitMarker"></div>
+  <div id="damageVignette"></div>
+
+  <div id="leftStats" class="stat-bar">
+    <div class="stat-label">점수</div>
+    <div id="scoreVal" class="stat-value">0</div>
   </div>
-  <div class="pin-error" id="pinError"></div>
-  <div class="pin-pad">
-    <button class="pin-btn" onclick="pinInput('1')">1</button>
-    <button class="pin-btn" onclick="pinInput('2')">2</button>
-    <button class="pin-btn" onclick="pinInput('3')">3</button>
-    <button class="pin-btn" onclick="pinInput('4')">4</button>
-    <button class="pin-btn" onclick="pinInput('5')">5</button>
-    <button class="pin-btn" onclick="pinInput('6')">6</button>
-    <button class="pin-btn" onclick="pinInput('7')">7</button>
-    <button class="pin-btn" onclick="pinInput('8')">8</button>
-    <button class="pin-btn" onclick="pinInput('9')">9</button>
-    <button class="pin-btn empty"></button>
-    <button class="pin-btn" onclick="pinInput('0')">0</button>
-    <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+  <div id="rightStats" class="stat-bar">
+    <div class="stat-label">웨이브</div>
+    <div id="waveVal" class="stat-value">1</div>
+    <div class="stat-label" style="margin-top:8px">남은 적</div>
+    <div id="enemyVal" class="stat-value" style="font-size:22px;color:var(--red)">0</div>
   </div>
-  <div class="pin-change-link" onclick="changePin()">PIN 변경</div>
-</div>
 
-
-<header>
-  <div class="logo">지휘통제실<span> by 김광민</span></div>
-  <div style="display:flex;align-items:center;gap:10px">
-    <button class="meeting-btn" onclick="openMeeting()">🎙️ 회의록</button>
-    <button class="notif-btn" id="notifBtn" onclick="toggleNotifications()">🔔 알림</button>
-    <button class="notif-btn" onclick="openChart()" style="border-color:var(--accent2);color:var(--accent2)">📊 통계</button>
-    <span id="syncStatus" style="font-size:12px;color:var(--muted);font-family:JetBrains Mono,monospace">⟳ 불러오는 중...</span>
-    <div class="header-date" id="headerDate"></div>
-  </div>
-</header>
-
-<div class="layout">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-title">Overview</div>
-    <div class="stat-card active" onclick="filterTasks('all', this)">
-      <div class="stat-label">전체 태스크</div>
-      <div class="stat-num total" id="statTotal">0</div>
+  <div id="bottomBar">
+    <div id="healthWrap">
+      <div id="healthLabel">체력</div>
+      <div id="healthBarBg"><div id="healthBar"></div></div>
     </div>
-    <div class="stat-card" onclick="filterTasks('urgent', this)">
-      <div class="stat-label">🔴 긴급 (높은 우선순위)</div>
-      <div class="stat-num urgent" id="statUrgent">0</div>
-    </div>
-    <div class="stat-card" onclick="filterTasks('today', this)">
-      <div class="stat-label">📅 오늘 마감</div>
-      <div class="stat-num today" id="statToday">0</div>
-    </div>
-    <div class="stat-card" onclick="filterTasks('done', this)">
-      <div class="stat-label">✅ 완료</div>
-      <div class="stat-num done" id="statDone">0</div>
-    </div>
-
-    <div class="filter-section">
-      <div class="sidebar-title" style="margin-top:8px">카테고리</div>
-      <button class="filter-btn active" onclick="filterCategory('all', this)">
-        <span class="filter-dot" style="background:var(--muted)"></span> 전체
-      </button>
-      <button class="filter-btn" onclick="filterCategory('work', this)">
-        <span class="filter-dot" style="background:var(--accent2)"></span> 업무
-      </button>
-      <button class="filter-btn" onclick="filterCategory('personal', this)">
-        <span class="filter-dot" style="background:var(--accent3)"></span> 개인
-      </button>
-      <button class="filter-btn" onclick="filterCategory('study', this)">
-        <span class="filter-dot" style="background:var(--accent)"></span> 학습
-      </button>
-      <button class="filter-btn" onclick="filterCategory('other', this)">
-        <span class="filter-dot" style="background:var(--muted)"></span> 기타
-      </button>
-    </div>
-
-    <!-- STICKY NOTES -->
-    <div class="sticky-section">
-      <div class="sidebar-title" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-        메모
-      </div>
-      <div id="stickyList"></div>
-      <button class="add-sticky-btn" onclick="addSticky()">＋ 메모 추가</button>
-    </div>
-
-    <!-- QUICK LINKS -->
-    <div class="links-section">
-      <div class="sidebar-title" style="display:flex;justify-content:space-between;align-items:center">
-        빠른 링크
-      </div>
-      <div id="linkList"></div>
-      <button class="add-link-btn" onclick="openLinkModal()">＋ 링크 추가</button>
-    </div>
-
-    <!-- 스크랩북 -->
-    <div class="scrap-section">
-      <div class="sidebar-title">📎 스크랩북</div>
-      <div id="scrapList"></div>
-      <button class="add-link-btn" onclick="openScrapModal()" style="border-color:rgba(240,96,180,0.3);color:var(--accent3)">＋ 스크랩 추가</button>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-    <div class="main-header">
-      <h1 class="main-title" id="mainTitle">모든 태스크</h1>
-      <button class="add-btn" onclick="openModal()">
-        <span>＋</span> 태스크 추가
-      </button>
-    </div>
-    <!-- VIEW TABS -->
-    <div class="view-tabs">
-      <button class="view-tab active" id="tabList" onclick="switchView('list')">📋 태스크</button>
-      <button class="view-tab" id="tabCal" onclick="switchView('cal')">📅 캘린더</button>
-    </div>
-
-    <!-- LIST VIEW -->
-    <div id="listView">
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
-      <input id="searchInput" placeholder="제목, 설명, 카테고리로 검색..." oninput="onSearch()">
-      <span class="search-count" id="searchCount"></span>
-    </div>
-    <!-- PIN MEMO -->
-    <div class="pin-memo-wrap">
-      <div class="pin-memo-header">
-        <span class="pin-memo-icon">📌</span>
-        <span class="pin-memo-label">핀 메모</span>
-        <button class="pin-memo-clear" onclick="clearPinMemo()">지우기</button>
-      </div>
-      <textarea class="pin-memo-textarea" id="pinMemoTextarea"
-        placeholder="이번 달 플랜, 중요 메모 등을 자유롭게 입력하세요..."
-        oninput="savePinMemo()"></textarea>
-    </div>
-
-    <div class="today-banner" id="todayBanner">
-      <div class="today-banner-title">📅 오늘 할 일</div>
-      <div id="todayList"></div>
-    </div>
-    <div class="task-list" id="taskList"></div>
-    </div><!-- end listView -->
-
-    <!-- CALENDAR VIEW -->
-    <div class="calendar-wrap" id="calView">
-      <div class="cal-header">
-        <button class="cal-nav" onclick="calMove(-1)">‹</button>
-        <div class="cal-month" id="calMonth"></div>
-        <button class="cal-nav" onclick="calMove(1)">›</button>
-      </div>
-      <div class="cal-grid" id="calGrid"></div>
-    </div>
-  </main>
-
-  <!-- AI PANEL REMOVED -->
-</div>
-
-<!-- MOBILE NAV -->
-<nav class="mobile-nav" id="mobileNav">
-  <button class="mobile-nav-btn active" id="navMain" onclick="mobileTab('main')">
-    <span class="nav-icon">📋</span>태스크
-  </button>
-  <button class="mobile-nav-btn" id="navFilter" onclick="mobileTab('filter')">
-    <span class="nav-icon">☰</span>필터
-  </button>
-  <button class="mobile-nav-btn" id="navAdd" onclick="openModal()">
-    <span class="nav-icon">＋</span>추가
-  </button>
-</nav>
-
-
-
-
-<!-- MEETING MODAL -->
-<div class="meeting-overlay" id="meetingOverlay">
-  <div class="meeting-modal">
-    <div class="meeting-header">
-      <div class="meeting-title">🎙️ 회의록</div>
-      <button class="btn-cancel" onclick="closeMeeting()">닫기</button>
-    </div>
-
-    <div class="meeting-controls">
-      <select class="meeting-lang-select" id="meetingLang">
-        <option value="ko-KR">🇰🇷 한국어</option>
-        <option value="ja-JP">🇯🇵 일본어</option>
-        <option value="en-US">🇺🇸 영어</option>
-      </select>
-      <button class="rec-btn start" id="recStartBtn" onclick="startRecording()">● 녹음 시작</button>
-      <button class="rec-btn stop" id="recStopBtn" onclick="stopRecording()" style="display:none">■ 중지</button>
-      <div class="rec-status">
-        <div class="rec-dot" id="recDot"></div>
-        <span id="recStatusText">대기 중</span>
-      </div>
-    </div>
-
-    <div class="meeting-transcript" id="meetingTranscript">
-      <span style="color:var(--muted);font-style:italic">녹음 시작 버튼을 누르면 음성이 자동으로 텍스트로 변환됩니다...</span>
-    </div>
-
-    <div class="meeting-actions">
-      <button class="meeting-save-btn" onclick="saveMeetingNote()">💾 저장</button>
-      <button class="meeting-copy-btn" onclick="copyTranscript()">📋 복사</button>
-      <button class="meeting-clear-btn" onclick="clearTranscript()">🗑 지우기</button>
-    </div>
-
-    <div id="meetingSavedSection" style="display:none">
-      <div class="sidebar-title" style="margin-bottom:10px">저장된 회의록</div>
-      <div class="meeting-saved-list" id="meetingSavedList"></div>
+    <div id="ammoWrap">
+      <div id="ammoLabel">탄약</div>
+      <div id="ammoVal">30<span class="mag"> / 30</span></div>
+      <div id="reloadHint"></div>
     </div>
   </div>
 </div>
 
+<div id="waveAnnounce"><div class="big"></div><div class="small"></div></div>
 
-<!-- BRIEFING MODAL -->
-<div class="briefing-overlay" id="briefingOverlay">
-  <div class="briefing-modal">
-    <div class="briefing-greeting" id="briefingGreeting">좋은 아침입니다, 광민님 ✦</div>
-    <div class="briefing-date" id="briefingDate"></div>
-    <div class="briefing-section">
-      <div class="briefing-section-title">오늘의 현황</div>
-      <div class="briefing-stat-row" id="briefingStats"></div>
-    </div>
-    <div class="briefing-section">
-      <div class="briefing-section-title">오늘 할 일</div>
-      <div id="briefingTasks"></div>
-    </div>
-    <button class="briefing-close" onclick="closeBriefing()">지휘통제실 입장 →</button>
+<!-- Start overlay -->
+<div id="startScreen" class="overlay hidden">
+  <div class="title">표적 작전</div>
+  <div class="subtitle">T A R G E T &nbsp; O P S</div>
+  <button class="btn" id="startBtn">작전 개시 ▶</button>
+  <div class="controls">
+    <span><span class="key">W A S D</span></span><span><b>이동</b></span>
+    <span><span class="key">마우스</span></span><span><b>조준</b></span>
+    <span><span class="key">좌클릭</span></span><span><b>발사</b></span>
+    <span><span class="key">R</span></span><span><b>재장전</b></span>
+    <span><span class="key">Shift</span></span><span><b>달리기</b></span>
+    <span><span class="key">Space</span></span><span><b>점프</b></span>
+    <span><span class="key">ESC</span></span><span><b>일시정지</b></span>
   </div>
+  <div id="pauseHint">화면을 클릭하면 마우스가 잠기고 시점 조작이 시작됩니다.</div>
 </div>
 
-<!-- SCRAP MODAL -->
-<div class="scrap-modal-overlay" id="scrapModalOverlay">
-  <div class="scrap-modal">
-    <div class="modal-title" style="font-size:18px;margin-bottom:18px">📎 스크랩 추가</div>
-    <div class="form-row">
-      <div class="form-label">제목</div>
-      <input class="form-input" id="scrapTitle" placeholder="자료 제목">
-    </div>
-    <div class="form-row">
-      <div class="form-label">URL (선택)</div>
-      <input class="form-input" id="scrapUrl" placeholder="https://...">
-    </div>
-    <div class="form-row">
-      <div class="form-label">메모</div>
-      <textarea class="form-textarea" id="scrapNote" placeholder="간단한 메모..." style="min-height:60px"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-label">태그</div>
-      <input class="form-input" id="scrapTag" placeholder="예: 기획, 레퍼런스, 경쟁사">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeScrapModal()">취소</button>
-      <button class="btn-save" onclick="saveScrap()">저장</button>
-    </div>
-  </div>
+<!-- Pause overlay -->
+<div id="pauseScreen" class="overlay hidden">
+  <div class="title" style="font-size:48px">일시정지</div>
+  <div class="subtitle">PAUSED</div>
+  <button class="btn" id="resumeBtn">계속하기</button>
 </div>
 
-<!-- LINK MODAL -->
-<div class="link-modal-overlay" id="linkModalOverlay">
-  <div class="link-modal">
-    <div class="modal-title" style="font-size:18px;margin-bottom:18px">🔗 링크 추가</div>
-    <div class="form-row">
-      <div class="form-label">링크 이름</div>
-      <input class="form-input" id="lName" placeholder="예: JK Fandom, Google Drive...">
-    </div>
-    <div class="form-row">
-      <div class="form-label">URL</div>
-      <input class="form-input" id="lUrl" placeholder="https://...">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeLinkModal()">취소</button>
-      <button class="btn-save" onclick="saveLink()">추가</button>
-    </div>
-  </div>
+<!-- Game over overlay -->
+<div id="gameOverScreen" class="overlay hidden">
+  <div class="title" style="font-size:52px;background:linear-gradient(90deg,#f06060,#f0c060);-webkit-background-clip:text;background-clip:text;color:transparent">작전 종료</div>
+  <div class="subtitle">MISSION FAILED</div>
+  <div id="finalScore">최종 점수: 0</div>
+  <div id="finalWave">도달 웨이브: 1</div>
+  <button class="btn" id="restartBtn">다시 도전 ↻</button>
 </div>
 
-<!-- CHART MODAL -->
-<div class="chart-modal-overlay" id="chartOverlay">
-  <div class="chart-modal">
-    <div class="chart-title">📊 태스크 통계</div>
-    <div class="chart-summary">
-      <div class="chart-stat"><div class="chart-stat-num" id="cTotal" style="color:var(--accent)">0</div><div class="chart-stat-lbl">전체</div></div>
-      <div class="chart-stat"><div class="chart-stat-num" id="cDone" style="color:var(--green)">0</div><div class="chart-stat-lbl">완료</div></div>
-      <div class="chart-stat"><div class="chart-stat-num" id="cRate" style="color:var(--accent2)">0%</div><div class="chart-stat-lbl">완료율</div></div>
-    </div>
-    <div class="chart-section-title">카테고리별 완료율</div>
-    <div id="chartCat"></div>
-    <div class="chart-section-title">우선순위별 현황</div>
-    <div id="chartPri"></div>
-    <div style="margin-top:20px;text-align:right">
-      <button class="btn-cancel" onclick="closeChart()">닫기</button>
-    </div>
-  </div>
-</div>
-
-<!-- MEMO MODAL -->
-<div class="memo-overlay" id="memoOverlay">
-  <div class="memo-modal">
-    <div class="memo-header">
-      <div class="memo-task-title" id="memoTaskTitle"></div>
-      <button class="btn-cancel" onclick="closeMemo()" style="padding:6px 12px;font-size:12px">닫기</button>
-    </div>
-    <div class="memo-list" id="memoList"></div>
-    <div class="memo-input-row">
-      <input class="memo-input" id="memoInput" placeholder="메모를 입력하세요..." onkeydown="if(event.key==='Enter')addMemo()">
-      <button class="memo-send" onclick="addMemo()">추가</button>
-    </div>
-  </div>
-</div>
-<!-- MODAL -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <div class="modal-title" id="modalTitleText">새 태스크 추가</div>
-    <div class="form-row">
-      <div class="form-label">제목 *</div>
-      <input class="form-input" id="fTitle" placeholder="태스크 제목을 입력하세요">
-    </div>
-    <div class="form-row">
-      <div class="form-label">설명</div>
-      <textarea class="form-textarea" id="fDesc" placeholder="상세 내용 (선택)"></textarea>
-    </div>
-    <div class="form-row-2">
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-label">마감일</div>
-        <input class="form-input" id="fDate" type="date">
-      </div>
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-label">마감 시간</div>
-        <input class="form-input" id="fTime" type="time">
-      </div>
-    </div>
-    <div class="form-row-2" style="margin-top:16px">
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-label">우선순위</div>
-        <select class="form-select" id="fPriority">
-          <option value="high">🔴 높음 (긴급)</option>
-          <option value="mid" selected>🟡 중간</option>
-          <option value="low">🟢 낮음</option>
-        </select>
-      </div>
-      <div class="form-row" style="margin-bottom:0">
-        <div class="form-label">카테고리</div>
-        <select class="form-select" id="fCategory">
-          <option value="work">💼 업무</option>
-          <option value="personal">🏠 개인</option>
-          <option value="study">📚 학습</option>
-          <option value="other">📌 기타</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row" style="margin-top:16px">
-      <div class="form-label">반복 설정</div>
-      <select class="form-select" id="fRepeat">
-        <option value="none">반복 없음</option>
-        <option value="daily">매일</option>
-        <option value="weekly">매주 (같은 요일)</option>
-        <option value="monthly">매월 (같은 날짜)</option>
-      </select>
-    </div>
-    <!-- 링크 섹션 -->
-    <div class="modal-links-section">
-      <div class="form-label" style="margin-bottom:8px">🔗 관련 링크</div>
-      <div id="modalLinkList"></div>
-      <div class="modal-link-add-row">
-        <input class="modal-link-input" id="modalLinkInput" placeholder="URL 입력 (https://...)" onkeydown="if(event.key==='Enter'){event.preventDefault();addModalLink();}">
-        <input class="modal-link-input" id="modalLinkLabel" placeholder="링크 이름" style="max-width:120px" onkeydown="if(event.key==='Enter'){event.preventDefault();addModalLink();}">
-        <button class="modal-link-add-btn" onclick="addModalLink()">추가</button>
-      </div>
-      <button class="gdrive-shortcut" onclick="addGDriveLink()">
-        <span>📁</span> Google Drive 링크 추가
-      </button>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="saveTask()">저장</button>
-    </div>
-  </div>
-</div>
-
-<script>
-
-// ─── PIN LOCK ───
-const DEFAULT_PIN = '1234';
-let pinBuffer = '';
-let pinSetting = false;
-let pinNewBuffer = '';
-
-function pinInput(n) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += n;
-  updatePinDots(pinBuffer.length, false);
-  if (pinBuffer.length === 4) {
-    setTimeout(() => checkPin(), 150);
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }
 }
+</script>
 
-// 키보드 입력 지원
-document.addEventListener('keydown', function(e) {
-  const overlay = document.getElementById('pinOverlay');
-  if (!overlay || overlay.classList.contains('hidden')) return;
-  if (e.key >= '0' && e.key <= '9') pinInput(e.key);
-  else if (e.key === 'Backspace') pinDelete();
-  else if (e.key === 'Enter' && pinBuffer.length === 4) checkPin();
-});
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-function pinDelete() {
-  if (pinBuffer.length > 0) {
-    pinBuffer = pinBuffer.slice(0, -1);
-    updatePinDots(pinBuffer.length, false);
+/* ============================================================
+   표적 작전 (Target Ops) — 3D FPS
+   Three.js 기반 자체 완결형 브라우저 게임
+   ============================================================ */
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const hud = $('hud');
+const loadingEl = $('loading');
+const startScreen = $('startScreen');
+const pauseScreen = $('pauseScreen');
+const gameOverScreen = $('gameOverScreen');
+const crosshair = $('crosshair');
+const hitMarker = $('hitMarker');
+const damageVignette = $('damageVignette');
+const scoreVal = $('scoreVal');
+const waveVal = $('waveVal');
+const enemyVal = $('enemyVal');
+const healthBar = $('healthBar');
+const ammoVal = $('ammoVal');
+const reloadHint = $('reloadHint');
+const waveAnnounce = $('waveAnnounce');
+
+// ---------- Renderer / Scene / Camera ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e0f13);
+scene.fog = new THREE.FogExp2(0x0e0f13, 0.018);
+
+const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.1, 500);
+camera.position.set(0, 1.7, 0);
+
+// ---------- Lights ----------
+const hemi = new THREE.HemisphereLight(0x8090b0, 0x202028, 0.7);
+scene.add(hemi);
+const dir = new THREE.DirectionalLight(0xfff0d8, 1.1);
+dir.position.set(30, 50, 20);
+dir.castShadow = true;
+dir.shadow.mapSize.set(2048, 2048);
+dir.shadow.camera.left = -60; dir.shadow.camera.right = 60;
+dir.shadow.camera.top = 60; dir.shadow.camera.bottom = -60;
+dir.shadow.camera.near = 1; dir.shadow.camera.far = 150;
+scene.add(dir);
+
+// ---------- Arena ----------
+const ARENA = 60; // half-size (arena spans -ARENA..ARENA)
+const colliders = []; // {min:Vector3, max:Vector3} AABBs for obstacles
+
+function buildArena() {
+  // Floor
+  const floorGeo = new THREE.PlaneGeometry(ARENA * 2, ARENA * 2, 1, 1);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x16181f, roughness: 0.95, metalness: 0.05 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // Grid accent
+  const grid = new THREE.GridHelper(ARENA * 2, 48, 0x2a2d38, 0x1e2029);
+  grid.position.y = 0.02;
+  scene.add(grid);
+
+  // Perimeter walls
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e2029, roughness: 0.8, metalness: 0.1 });
+  const wallH = 8, t = 2;
+  const wallDefs = [
+    [0, ARENA, ARENA * 2 + t, t],   // far (z+)
+    [0, -ARENA, ARENA * 2 + t, t],  // near (z-)
+    [ARENA, 0, t, ARENA * 2 + t],   // right (x+)
+    [-ARENA, 0, t, ARENA * 2 + t],  // left (x-)
+  ];
+  for (const [x, z, w, d] of wallDefs) {
+    const geo = new THREE.BoxGeometry(w, wallH, d);
+    const m = new THREE.Mesh(geo, wallMat);
+    m.position.set(x, wallH / 2, z);
+    m.castShadow = true; m.receiveShadow = true;
+    scene.add(m);
+    addCollider(m.position, w, wallH, d);
   }
-}
 
-function updatePinDots(count, error) {
-  for (let i = 0; i < 4; i++) {
-    const dot = document.getElementById('pd' + i);
-    dot.classList.toggle('filled', i < count && !error);
-    dot.classList.toggle('error', i < count && error);
-  }
-}
-
-function checkPin() {
-  const saved = localStorage.getItem('biseo_pin') || DEFAULT_PIN;
-  if (pinBuffer === saved) {
-    document.getElementById('pinOverlay').classList.add('hidden');
-    document.getElementById('pinError').textContent = '';
-    // 세션 유지 (8시간)
-    sessionStorage.setItem('pin_ok', Date.now());
-  } else {
-    updatePinDots(4, true);
-    document.getElementById('pinError').textContent = '틀렸습니다. 다시 입력하세요.';
-    setTimeout(() => {
-      pinBuffer = '';
-      updatePinDots(0, false);
-      document.getElementById('pinError').textContent = '';
-    }, 800);
-  }
-}
-
-function changePin() {
-  const current = prompt('현재 PIN을 입력하세요:');
-  const saved = localStorage.getItem('biseo_pin') || DEFAULT_PIN;
-  if (current !== saved) { alert('현재 PIN이 틀렸습니다.'); return; }
-  const newPin = prompt('새 PIN 4자리를 입력하세요:');
-  if (!newPin || newPin.length !== 4 || isNaN(newPin)) { alert('PIN은 숫자 4자리여야 합니다.'); return; }
-  const confirm2 = prompt('새 PIN을 한 번 더 입력하세요:');
-  if (newPin !== confirm2) { alert('PIN이 일치하지 않습니다.'); return; }
-  localStorage.setItem('biseo_pin', newPin);
-  alert('PIN이 변경되었습니다!');
-}
-
-function initPin() {
-  // 8시간 이내 인증된 세션이면 스킵
-  const pinOk = sessionStorage.getItem('pin_ok');
-  if (pinOk && Date.now() - parseInt(pinOk) < 8 * 60 * 60 * 1000) {
-    document.getElementById('pinOverlay').classList.add('hidden');
-    return;
-  }
-  // 최초 실행 시 PIN 안내
-  if (!localStorage.getItem('biseo_pin')) {
-    document.getElementById('pinOverlay').querySelector('.pin-subtitle').textContent = '기본 PIN: 1234 (변경 가능)';
-  }
-}
-
-// ─── STATE ───
-const SHEET_URL = 'https://script.google.com/a/macros/fancsglobal.com/s/AKfycbz_LtF0fMQAm9GHW52jZ0QA7bag0WQ8l_rjHQmo0urMkQ-1VETKTVlooOY5eoeJyMHv0g/exec';
-let tasks = [];
-let currentFilter = 'all';
-let currentCategory = 'all';
-let editingId = null;
-let isSyncing = false;
-
-const catLabel = { work: '업무', personal: '개인', study: '학습', other: '기타' };
-const priLabel = { high: '높음', mid: '중간', low: '낮음' };
-
-function showSyncStatus(msg, color='var(--muted)') {
-  const el = document.getElementById('syncStatus');
-  if (el) { el.textContent = msg; el.style.color = color; }
-}
-
-async function loadTasks() {
-  showSyncStatus('⟳ 불러오는 중...', 'var(--accent2)');
-  try {
-    const res = await fetch(SHEET_URL + '?action=getAll&t=' + Date.now());
-    const data = await res.json();
-    if (data.tasks !== undefined) {
-      tasks = data.tasks || [];
-      stickies = data.stickies || [];
-      links = data.links || [];
-      localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
-      localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
-      localStorage.setItem('biseo_links', JSON.stringify(links));
-      showSyncStatus('✓ 동기화됨', 'var(--green)');
+  // Obstacle crates / pillars — randomized layout
+  const crateMat = new THREE.MeshStandardMaterial({ color: 0x60b4f0, roughness: 0.6, metalness: 0.2 });
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2a2d38, roughness: 0.7, metalness: 0.3 });
+  const rng = mulberry32(1337);
+  for (let i = 0; i < 26; i++) {
+    const isPillar = rng() > 0.55;
+    const x = (rng() - 0.5) * (ARENA * 1.7);
+    const z = (rng() - 0.5) * (ARENA * 1.7);
+    if (Math.hypot(x, z) < 8) continue; // keep spawn clear
+    if (isPillar) {
+      const h = 3 + rng() * 6;
+      const r = 0.6 + rng() * 0.8;
+      const geo = new THREE.CylinderGeometry(r, r, h, 8);
+      const m = new THREE.Mesh(geo, pillarMat);
+      m.position.set(x, h / 2, z);
+      m.castShadow = true; m.receiveShadow = true;
+      scene.add(m);
+      addCollider(m.position, r * 2, h, r * 2);
     } else {
-      throw new Error(data.error || 'no data');
-    }
-  } catch(e) {
-    console.error('load error:', e);
-    tasks = JSON.parse(localStorage.getItem('biseo_tasks') || '[]');
-    stickies = JSON.parse(localStorage.getItem('biseo_stickies') || '[]');
-    links = JSON.parse(localStorage.getItem('biseo_links') || '[]');
-    showSyncStatus('⚠ 오프라인 모드', 'var(--yellow)');
-  }
-  renderTasks();
-  renderStickies();
-  renderLinks();
-}
-
-async function saveTasks() {
-  localStorage.setItem('biseo_tasks', JSON.stringify(tasks));
-  localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
-  localStorage.setItem('biseo_links', JSON.stringify(links));
-  showSyncStatus('⟳ 저장 중...', 'var(--accent2)');
-  try {
-    const payload = encodeURIComponent(JSON.stringify({ tasks, stickies, links }));
-    const res = await fetch(SHEET_URL + '?action=saveAll&payload=' + payload);
-    const data = await res.json();
-    if (data.success) {
-      showSyncStatus('✓ 동기화됨', 'var(--green)');
-    } else {
-      throw new Error(data.error || 'failed');
-    }
-  } catch(e) {
-    console.error('sync error:', e);
-    showSyncStatus('⚠ 로컬 저장됨', 'var(--yellow)');
-  }
-}
-
-// ─── DATE ───
-function updateDate() {
-  const now = new Date();
-  const days = ['일','월','화','수','목','금','토'];
-  document.getElementById('headerDate').textContent =
-    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})`;
-}
-updateDate(); setInterval(updateDate, 60000);
-
-function toDateStr(d) { return d.toISOString().split('T')[0]; }
-function today() { return toDateStr(new Date()); }
-function isOverdue(task) { return task.date && !task.done && task.date < today(); }
-function isTodayDue(task) { return task.date && task.date === today() && !task.done; }
-function isThisWeek(task) {
-  if (!task.date || task.done) return false;
-  const d = new Date(task.date);
-  const now = new Date();
-  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
-  return d >= now && d <= weekEnd;
-}
-
-// ─── RENDER ───
-function updateStats() {
-  const active = tasks.filter(t => !t.done);
-  document.getElementById('statTotal').textContent = tasks.filter(t=>!t.done).length;
-  document.getElementById('statUrgent').textContent = active.filter(t=>t.priority==='high').length;
-  document.getElementById('statToday').textContent = active.filter(isTodayDue).length;
-  document.getElementById('statDone').textContent = tasks.filter(t=>t.done).length;
-}
-
-function renderTasks() {
-  updateStats();
-  renderTodayBanner();
-  let filtered = [...tasks];
-
-  if (currentFilter === 'urgent') filtered = filtered.filter(t => t.priority === 'high' && !t.done);
-  else if (currentFilter === 'today') filtered = filtered.filter(isTodayDue);
-  else if (currentFilter === 'done') filtered = filtered.filter(t => t.done);
-
-  if (currentCategory !== 'all') filtered = filtered.filter(t => t.category === currentCategory);
-
-  // Sort: done last, then by priority, then date
-  const priOrder = { high: 0, mid: 1, low: 2 };
-  filtered.sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
-    if (a.priority !== b.priority) return priOrder[a.priority] - priOrder[b.priority];
-    if (a.date && b.date) return a.date.localeCompare(b.date);
-    return 0;
-  });
-
-  const list = document.getElementById('taskList');
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>태스크가 없습니다.<br>오른쪽 상단 버튼으로 추가해보세요.</p></div>`;
-    return;
-  }
-
-  // Apply search filter
-  if (searchQuery) {
-    filtered = filtered.filter(t =>
-      t.title.toLowerCase().includes(searchQuery) ||
-      (t.desc && t.desc.toLowerCase().includes(searchQuery)) ||
-      catLabel[t.category].toLowerCase().includes(searchQuery) ||
-      priLabel[t.priority].toLowerCase().includes(searchQuery)
-    );
-  }
-
-  // Update search count
-  const countEl = document.getElementById('searchCount');
-  if (countEl) countEl.textContent = searchQuery ? `${filtered.length}건` : '';
-
-  list.innerHTML = filtered.map(t => {
-    const over = isOverdue(t);
-    const soon = isTodayDue(t);
-    const dueCls = over ? 'overdue' : (soon ? 'soon' : '');
-    const dateStr = t.date ? `${t.date}${t.time ? ' '+t.time : ''}` : '';
-    const dueLabel = over ? `⚠ ${dateStr}` : dateStr;
-    const q = searchQuery;
-
-    const priCycle = { high:'mid', mid:'low', low:'high' };
-    const priEmoji = { high:'🔴', mid:'🟡', low:'🟢' };
-    return `<div class="task-card p-${t.priority} ${t.done?'done':''}" id="tc-${t.id}" draggable="true" ondragstart="dragStart(event,'${t.id}')" ondragover="dragOver(event)" ondrop="dragDrop(event,'${t.id}')" ondragleave="dragLeave(event)">
-      <div class="task-top">
-        <span class="drag-handle">⠿</span>
-        <div class="task-check ${t.done?'checked':''}" onclick="toggleDone('${t.id}')"></div>
-        <div class="task-title" onclick="openEditModal('${t.id}')">${highlight(t.title, q)}</div>
-        <button class="task-delete" onclick="deleteTask('${t.id}',event)" style="position:static;opacity:1;margin-left:auto">✕</button>
-      </div>
-      ${t.desc ? `<div style="font-size:12px;color:var(--muted);margin:0 0 10px 32px;line-height:1.5">${highlight(t.desc, q)}</div>` : ''}
-      <div class="task-meta" style="margin-left:32px">
-        <span class="tag tag-${t.category}">${catLabel[t.category]}</span>
-        <button class="pri-toggle priority-badge p-${t.priority}-badge" onclick="cyclePriority('${t.id}',event)" title="클릭하여 우선순위 변경">${priEmoji[t.priority]} ${priLabel[t.priority]}</button>
-        ${t.repeat && t.repeat!=='none' ? `<span style="font-size:11px;color:var(--accent2);background:rgba(96,180,240,0.1);padding:3px 8px;border-radius:20px">🔁 반복</span>` : ''}
-        <button onclick="openMemo('${t.id}',event)" style="background:transparent;border:none;cursor:pointer;font-size:12px;color:var(--muted);padding:2px 6px;border-radius:6px;transition:color 0.15s" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='var(--muted)'">💬${t.memos&&t.memos.length?`<span class="memo-count">${t.memos.length}</span>`:''}</button>
-        ${dateStr ? `<span class="due-date ${dueCls}">${dueLabel}</span>` : ''}
-      </div>
-      ${t.links && t.links.length ? `<div class="task-links">${t.links.map(l => `<a class="task-link-chip" href="${l.url}" target="_blank" onclick="event.stopPropagation()"><span class="chip-icon">${getLinkIcon(l.url)}</span><span class="chip-label">${l.label||l.url}</span></a>`).join('')}</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-// ─── FILTER ───
-function filterTasks(type, el) {
-  currentFilter = type;
-  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  const titles = { all:'모든 태스크', urgent:'긴급 태스크', today:'오늘 마감', done:'완료된 태스크' };
-  document.getElementById('mainTitle').textContent = titles[type];
-  renderTasks();
-}
-
-function filterCategory(cat, el) {
-  currentCategory = cat;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderTasks();
-}
-
-// ─── CRUD ───
-function toggleDone(id) {
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  t.done = !t.done;
-  // 반복 태스크: 완료 시 다음 회차 자동 생성
-  if (t.done && t.repeat && t.repeat !== 'none' && t.date) {
-    const exists = tasks.some(x => x.title === t.title && x.date === getNextDate(t.date, t.repeat) && !x.done);
-    if (!exists) {
-      tasks.unshift({
-        id: Date.now().toString(),
-        title: t.title,
-        desc: t.desc,
-        date: getNextDate(t.date, t.repeat),
-        time: t.time,
-        priority: t.priority,
-        category: t.category,
-        repeat: t.repeat,
-        memos: [],
-        done: false,
-        createdAt: new Date().toISOString()
-      });
+      const s = 1.4 + rng() * 2.2;
+      const geo = new THREE.BoxGeometry(s, s, s);
+      const m = new THREE.Mesh(geo, crateMat.clone());
+      m.material.color.offsetHSL(0, 0, (rng() - 0.5) * 0.2);
+      m.position.set(x, s / 2, z);
+      m.rotation.y = rng() * Math.PI;
+      m.castShadow = true; m.receiveShadow = true;
+      scene.add(m);
+      addCollider(m.position, s * 1.2, s, s * 1.2); // approx (ignore rotation)
     }
   }
-  saveTasks(); renderTasks();
 }
 
-function deleteTask(id, e) {
-  e.stopPropagation();
-  if (!confirm('이 태스크를 삭제할까요?')) return;
-  tasks = tasks.filter(t => t.id !== id);
-  renderTasks();
-  saveTasks();
+function addCollider(pos, w, h, d) {
+  colliders.push(new THREE.Box3(
+    new THREE.Vector3(pos.x - w / 2, pos.y - h / 2, pos.z - d / 2),
+    new THREE.Vector3(pos.x + w / 2, pos.y + h / 2, pos.z + d / 2)
+  ));
 }
 
-function openModal() {
-  editingId = null;
-  document.getElementById('modalTitleText').textContent = '새 태스크 추가';
-  document.getElementById('fTitle').value = '';
-  document.getElementById('fDesc').value = '';
-  document.getElementById('fDate').value = today();
-  document.getElementById('fTime').value = '';
-  document.getElementById('fPriority').value = 'mid';
-  document.getElementById('fCategory').value = 'work';
-  document.getElementById('fRepeat').value = 'none';
-  modalLinks = [];
-  renderModalLinks();
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fTitle').focus(), 100);
-}
-
-function openEditModal(id) {
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  editingId = id;
-  document.getElementById('modalTitleText').textContent = '태스크 수정';
-  document.getElementById('fTitle').value = t.title;
-  document.getElementById('fDesc').value = t.desc || '';
-  document.getElementById('fDate').value = t.date || '';
-  document.getElementById('fTime').value = t.time || '';
-  document.getElementById('fPriority').value = t.priority;
-  document.getElementById('fCategory').value = t.category;
-  document.getElementById('fRepeat').value = t.repeat || 'none';
-  modalLinks = t.links ? [...t.links] : [];
-  renderModalLinks();
-  document.getElementById('modalOverlay').classList.add('open');
-}
-
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-
-function saveTask() {
-  const title = document.getElementById('fTitle').value.trim();
-  if (!title) { document.getElementById('fTitle').style.borderColor='var(--red)'; return; }
-  document.getElementById('fTitle').style.borderColor='';
-
-  const task = {
-    id: editingId || Date.now().toString(),
-    title,
-    desc: document.getElementById('fDesc').value.trim(),
-    date: document.getElementById('fDate').value,
-    time: document.getElementById('fTime').value,
-    priority: document.getElementById('fPriority').value,
-    category: document.getElementById('fCategory').value,
-    repeat: document.getElementById('fRepeat').value,
-    memos: [],
-    links: [...modalLinks],
-    done: false,
-    createdAt: new Date().toISOString()
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
-
-  if (editingId) {
-    const idx = tasks.findIndex(t => t.id === editingId);
-    task.done = tasks[idx].done;
-    task.memos = tasks[idx].memos || [];
-    tasks[idx] = task;
-  } else {
-    tasks.unshift(task);
-  }
-
-  saveTasks(); closeModal(); renderTasks();
 }
 
-function getNextDate(dateStr, repeat) {
-  const d = new Date(dateStr);
-  if (repeat === 'daily') d.setDate(d.getDate() + 1);
-  else if (repeat === 'weekly') d.setDate(d.getDate() + 7);
-  else if (repeat === 'monthly') d.setMonth(d.getMonth() + 1);
-  return d.toISOString().split('T')[0];
+buildArena();
+
+// ---------- Weapon viewmodel ----------
+const weapon = new THREE.Group();
+{
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x20222b, roughness: 0.5, metalness: 0.6 });
+  const accentMat = new THREE.MeshStandardMaterial({ color: 0xc8f060, roughness: 0.4, metalness: 0.3, emissive: 0x3a4a10 });
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.7), bodyMat);
+  body.position.set(0, 0, -0.2);
+  weapon.add(body);
+
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.6, 12), bodyMat);
+  barrel.rotation.x = Math.PI / 2;
+  barrel.position.set(0, 0.02, -0.6);
+  weapon.add(barrel);
+
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), bodyMat);
+  grip.position.set(0, -0.2, 0.05);
+  grip.rotation.x = 0.25;
+  weapon.add(grip);
+
+  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.18), accentMat);
+  sight.position.set(0, 0.13, -0.15);
+  weapon.add(sight);
+
+  weapon.position.set(0.28, -0.26, -0.55);
+  camera.add(weapon);
+}
+// muzzle flash
+const muzzle = new THREE.PointLight(0xffd060, 0, 8, 2);
+muzzle.position.set(0, 0.04, -1.0);
+weapon.add(muzzle);
+const muzzleSprite = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.4, 0.4),
+  new THREE.MeshBasicMaterial({ color: 0xffe080, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })
+);
+muzzleSprite.position.set(0, 0.02, -0.95);
+weapon.add(muzzleSprite);
+scene.add(camera);
+
+// ---------- Controls ----------
+const controls = new PointerLockControls(camera, renderer.domElement);
+scene.add(controls.getObject());
+controls.getObject().position.set(0, 1.7, 0);
+
+// ---------- Game state ----------
+const State = { MENU: 0, PLAYING: 1, PAUSED: 2, OVER: 3 };
+let state = State.MENU;
+
+const player = {
+  velY: 0, onGround: true,
+  health: 100, maxHealth: 100,
+  speed: 6.0, runMul: 1.7,
+};
+let score = 0;
+let wave = 0;
+let enemiesRemaining = 0;
+
+const weaponDef = { magSize: 30, fireRate: 0.09, reloadTime: 1.4, damage: 34, range: 200 };
+let ammo = weaponDef.magSize;
+let fireCooldown = 0;
+let reloading = false;
+let reloadTimer = 0;
+
+const keys = {};
+const move = { f: 0, b: 0, l: 0, r: 0 };
+
+// ---------- Enemies ----------
+const enemies = [];
+const enemyGeo = new THREE.CapsuleGeometry(0.5, 1.0, 4, 10);
+
+function spawnEnemy(hp, speed) {
+  // spawn at arena edge, away from player
+  let x, z, tries = 0;
+  const p = controls.getObject().position;
+  do {
+    const ang = Math.random() * Math.PI * 2;
+    const rad = ARENA * 0.7 + Math.random() * ARENA * 0.25;
+    x = Math.cos(ang) * rad; z = Math.sin(ang) * rad;
+    tries++;
+  } while (Math.hypot(x - p.x, z - p.z) < 20 && tries < 12);
+
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf06060, roughness: 0.5, metalness: 0.2, emissive: 0x300808 });
+  const mesh = new THREE.Mesh(enemyGeo, mat);
+  mesh.position.set(x, 1.0, z);
+  mesh.castShadow = true;
+  scene.add(mesh);
+
+  // glowing eye
+  const eye = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffff80 })
+  );
+  eye.position.set(0, 0.55, 0.45);
+  mesh.add(eye);
+
+  enemies.push({ mesh, hp, maxHp: hp, speed, hitFlash: 0, atkCooldown: 0 });
 }
 
-document.getElementById('modalOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
+// ---------- Waves ----------
+function startWave(n) {
+  wave = n;
+  waveVal.textContent = n;
+  const count = 3 + Math.floor(n * 1.8);
+  const hp = 60 + n * 18;
+  const speed = 2.2 + n * 0.28;
+  enemiesRemaining = count;
+  enemyVal.textContent = count;
 
-// ─── AI ───
-function buildTaskContext() {
-  const now = new Date();
-  const todayStr = today();
-  const active = tasks.filter(t => !t.done);
-  
-  if (tasks.length === 0) return '현재 등록된 태스크가 없습니다.';
+  // spawn gradually
+  let spawned = 0;
+  const spawnInterval = setInterval(() => {
+    if (state !== State.PLAYING) { clearInterval(spawnInterval); return; }
+    spawnEnemy(hp, Math.min(speed, 6.5));
+    spawned++;
+    if (spawned >= count) clearInterval(spawnInterval);
+  }, 650);
 
-  const lines = [`현재 날짜: ${todayStr}`, `\n=== 태스크 목록 (총 ${tasks.length}개, 미완료 ${active.length}개) ===\n`];
-  
-  tasks.forEach((t, i) => {
-    const status = t.done ? '[완료]' : isOverdue(t) ? '[지연]' : isTodayDue(t) ? '[오늘마감]' : '[진행중]';
-    const due = t.date ? ` | 마감: ${t.date}${t.time?' '+t.time:''}` : '';
-    lines.push(`${i+1}. ${status} ${t.title}`);
-    lines.push(`   카테고리: ${catLabel[t.category]} | 우선순위: ${priLabel[t.priority]}${due}`);
-    if (t.desc) lines.push(`   설명: ${t.desc}`);
-  });
-
-  return lines.join('\n');
+  showWaveAnnounce(`웨이브 ${n}`, `적 ${count}기 접근 중`);
 }
 
-async function sendToAI(customMsg) {
-  const input = document.getElementById('aiInput');
-  const msg = customMsg || input.value.trim();
-  if (!msg) return;
-
-  input.value = '';
-  const btn = document.getElementById('aiSendBtn');
-  btn.disabled = true;
-
-  const messagesEl = document.getElementById('aiMessages');
-
-  // User msg
-  messagesEl.innerHTML += `<div class="msg msg-user">${msg}</div>`;
-
-  // Thinking
-  const thinkingId = 'thinking-' + Date.now();
-  messagesEl.innerHTML += `<div class="msg msg-ai" id="${thinkingId}"><span class="ai-thinking">✦ 분석 중...</span></div>`;
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-
-  const taskContext = buildTaskContext();
-  const systemPrompt = `당신은 사용자의 업무를 도와주는 유능한 AI 비서입니다. 
-사용자의 태스크 목록을 분석하고 명확하고 실용적으로 대답하세요.
-답변은 한국어로, 간결하고 구조적으로 작성하세요.
-오늘 날짜를 기준으로 마감일과 우선순위를 고려해서 중요한 것부터 알려주세요.`;
-
-  const userMessage = `[태스크 현황]\n${taskContext}\n\n[질문]\n${msg}`;
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }]
-      })
-    });
-
-    const data = await res.json();
-    const reply = data.content?.[0]?.text || '응답을 받을 수 없습니다.';
-    document.getElementById(thinkingId).textContent = reply;
-  } catch (err) {
-    document.getElementById(thinkingId).innerHTML = `<span style="color:var(--red)">오류가 발생했습니다. 다시 시도해주세요.</span>`;
-  }
-
-  btn.disabled = false;
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+function showWaveAnnounce(big, small) {
+  waveAnnounce.querySelector('.big').textContent = big;
+  waveAnnounce.querySelector('.small').textContent = small;
+  waveAnnounce.classList.add('show');
+  setTimeout(() => waveAnnounce.classList.remove('show'), 1800);
 }
 
-function quickAsk(q) {
-  document.getElementById('aiInput').value = q;
-  sendToAI(q);
+// ---------- Audio (WebAudio synth, no assets) ----------
+let actx = null;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  return actx;
 }
-
-// ─── SEARCH ───
-let searchQuery = '';
-
-function onSearch() {
-  searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
-  renderTasks();
+function shootSound() {
+  const a = audio(); const t = a.currentTime;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = 'square'; o.frequency.setValueAtTime(220, t);
+  o.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+  g.gain.setValueAtTime(0.18, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.11);
+  // noise burst
+  const buf = a.createBuffer(1, a.sampleRate * 0.06, a.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const src = a.createBufferSource(); src.buffer = buf;
+  const ng = a.createGain(); ng.gain.value = 0.12;
+  src.connect(ng); ng.connect(a.destination); src.start(t);
 }
-
-function highlight(text, query) {
-  if (!query) return text;
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<span class="highlight">$1</span>');
+function tone(freq, dur, type = 'sine', vol = 0.15) {
+  const a = audio(); const t = a.currentTime;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur);
 }
+function hitSound() { tone(880, 0.07, 'square', 0.1); }
+function killSound() { tone(180, 0.18, 'sawtooth', 0.16); setTimeout(() => tone(120, 0.2, 'sawtooth', 0.14), 60); }
+function reloadSound() { tone(300, 0.05, 'square', 0.08); setTimeout(() => tone(500, 0.05, 'square', 0.08), 180); }
+function hurtSound() { tone(140, 0.15, 'sawtooth', 0.18); }
 
-// ─── TODAY BANNER ───
-function renderTodayBanner() {
-  const todayTasks = tasks.filter(t => isTodayDue(t) || isOverdue(t));
-  const banner = document.getElementById('todayBanner');
-  const list = document.getElementById('todayList');
-  if (!banner || !list) return;
+// ---------- Shooting ----------
+const raycaster = new THREE.Raycaster();
+const screenCenter = new THREE.Vector2(0, 0);
 
-  if (todayTasks.length === 0) {
-    banner.classList.remove('show');
+function shoot() {
+  if (reloading || ammo <= 0 || fireCooldown > 0) {
+    if (ammo <= 0 && !reloading) startReload();
     return;
   }
+  ammo--;
+  fireCooldown = weaponDef.fireRate;
+  updateAmmo();
+  shootSound();
 
-  const priColor = { high: 'var(--red)', mid: 'var(--yellow)', low: 'var(--green)' };
-  const priOrder = { high:0, mid:1, low:2 };
-  todayTasks.sort((a,b) => priOrder[a.priority] - priOrder[b.priority]);
+  // muzzle flash
+  muzzle.intensity = 6;
+  muzzleSprite.material.opacity = 0.9;
+  muzzleSprite.rotation.z = Math.random() * Math.PI;
 
-  list.innerHTML = todayTasks.map(t => `
-    <div class="today-item">
-      <span class="t-pri" style="background:${priColor[t.priority]}"></span>
-      <span class="t-title">${t.title}</span>
-      ${t.time ? `<span class="t-time">${t.time}</span>` : ''}
-      ${isOverdue(t) ? `<span style="font-size:11px;color:var(--red)">지연</span>` : ''}
-    </div>`).join('');
-  banner.classList.add('show');
-}
+  // recoil kick
+  weapon.position.z = -0.42;
+  weapon.rotation.x = 0.08;
+  crosshair.classList.add('shoot');
+  setTimeout(() => crosshair.classList.remove('shoot'), 70);
 
-// ─── PRIORITY CYCLE ───
-function cyclePriority(id, e) {
-  e.stopPropagation();
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  const cycle = { high:'mid', mid:'low', low:'high' };
-  t.priority = cycle[t.priority];
-  renderTasks();
-  saveTasks();
-}
-
-// ─── DRAG TO REORDER ───
-let dragId = null;
-function dragStart(e, id) {
-  dragId = id;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-}
-function dragOver(e) {
-  e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
-}
-function dragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
-}
-function dragDrop(e, targetId) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (!dragId || dragId === targetId) return;
-  const fromIdx = tasks.findIndex(t => t.id === dragId);
-  const toIdx = tasks.findIndex(t => t.id === targetId);
-  const [moved] = tasks.splice(fromIdx, 1);
-  tasks.splice(toIdx, 0, moved);
-  dragId = null;
-  renderTasks();
-  saveTasks();
-}
-document.addEventListener('dragend', () => {
-  document.querySelectorAll('.task-card').forEach(c => c.classList.remove('dragging','drag-over'));
-});
-
-
-// ─── MEMO ───
-let memoTaskId = null;
-function openMemo(id, e) {
-  e.stopPropagation();
-  memoTaskId = id;
-  const t = tasks.find(t => t.id === id);
-  if (!t) return;
-  document.getElementById('memoTaskTitle').textContent = t.title;
-  renderMemoList(t);
-  document.getElementById('memoOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('memoInput').focus(), 100);
-}
-function closeMemo() { document.getElementById('memoOverlay').classList.remove('open'); }
-function renderMemoList(t) {
-  const list = document.getElementById('memoList');
-  if (!t.memos || t.memos.length === 0) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">메모가 없습니다.</div>';
-    return;
+  // raycast from camera center
+  raycaster.setFromCamera(screenCenter, camera);
+  raycaster.far = weaponDef.range;
+  const meshes = enemies.map(e => e.mesh);
+  const hits = raycaster.intersectObjects(meshes, false);
+  if (hits.length) {
+    const hitMesh = hits[0].object;
+    const enemy = enemies.find(e => e.mesh === hitMesh);
+    if (enemy) {
+      enemy.hp -= weaponDef.damage;
+      enemy.hitFlash = 0.12;
+      showHitMarker();
+      hitSound();
+      // knockback spark
+      spawnSpark(hits[0].point);
+      if (enemy.hp <= 0) killEnemy(enemy);
+    }
   }
-  list.innerHTML = t.memos.map((m,i) => `
-    <div class="memo-item">
-      <button class="memo-item-del" onclick="deleteMemo(${i})">✕</button>
-      ${m.text}
-      <div class="memo-item-time">${m.time}</div>
-    </div>`).join('');
+  if (ammo <= 0) startReload();
 }
-function addMemo() {
-  const input = document.getElementById('memoInput');
-  const text = input.value.trim();
-  if (!text) return;
-  const t = tasks.find(t => t.id === memoTaskId);
-  if (!t) return;
-  if (!t.memos) t.memos = [];
-  t.memos.push({ text, time: new Date().toLocaleString('ko-KR') });
-  input.value = '';
-  renderMemoList(t);
-  saveTasks(); renderTasks();
+
+function showHitMarker() {
+  hitMarker.classList.add('show');
+  setTimeout(() => hitMarker.classList.remove('show'), 120);
 }
-function deleteMemo(idx) {
-  const t = tasks.find(t => t.id === memoTaskId);
-  if (!t) return;
-  t.memos.splice(idx, 1);
-  renderMemoList(t);
-  saveTasks(); renderTasks();
+
+// spark particles on hit
+const sparkPool = [];
+function spawnSpark(pos) {
+  const geo = new THREE.BufferGeometry();
+  const n = 8;
+  const arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { arr[i*3]=pos.x; arr[i*3+1]=pos.y; arr[i*3+2]=pos.z; }
+  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xffd060, size: 0.12, transparent: true, opacity: 1 });
+  const pts = new THREE.Points(geo, mat);
+  const vels = [];
+  for (let i = 0; i < n; i++) vels.push(new THREE.Vector3((Math.random()-.5)*4,(Math.random()-.5)*4,(Math.random()-.5)*4));
+  scene.add(pts);
+  sparkPool.push({ pts, vels, life: 0.4, geo });
 }
-document.getElementById('memoOverlay').addEventListener('click', function(e) { if(e.target===this) closeMemo(); });
 
-// ─── CHART ───
-function openChart() {
-  const total = tasks.length;
-  const done = tasks.filter(t => t.done).length;
-  const rate = total ? Math.round(done/total*100) : 0;
-  document.getElementById('cTotal').textContent = total;
-  document.getElementById('cDone').textContent = done;
-  document.getElementById('cRate').textContent = rate + '%';
+function killEnemy(enemy) {
+  scene.remove(enemy.mesh);
+  enemy.mesh.geometry.dispose?.();
+  enemy.mesh.material.dispose?.();
+  const idx = enemies.indexOf(enemy);
+  if (idx >= 0) enemies.splice(idx, 1);
+  score += 100 + wave * 10;
+  scoreVal.textContent = score;
+  enemiesRemaining--;
+  enemyVal.textContent = Math.max(0, enemiesRemaining);
+  killSound();
+  // death burst
+  for (let i = 0; i < 2; i++) spawnSpark(enemy.mesh.position);
 
-  const cats = ['work','personal','study','other'];
-  const catColors = { work:'var(--accent2)', personal:'var(--accent3)', study:'var(--accent)', other:'var(--muted)' };
-  document.getElementById('chartCat').innerHTML = cats.map(c => {
-    const all = tasks.filter(t => t.category===c);
-    const d = all.filter(t => t.done).length;
-    const r = all.length ? Math.round(d/all.length*100) : 0;
-    return `<div class="chart-row">
-      <div class="chart-label">${catLabel[c]}</div>
-      <div class="chart-bar-bg"><div class="chart-bar" style="width:${r}%;background:${catColors[c]}"></div></div>
-      <div class="chart-val">${r}%</div>
-    </div>`;
-  }).join('');
-
-  const pris = ['high','mid','low'];
-  const priColors = { high:'var(--red)', mid:'var(--yellow)', low:'var(--green)' };
-  document.getElementById('chartPri').innerHTML = pris.map(p => {
-    const all = tasks.filter(t => t.priority===p && !t.done).length;
-    const maxVal = Math.max(...pris.map(x => tasks.filter(t=>t.priority===x&&!t.done).length), 1);
-    return `<div class="chart-row">
-      <div class="chart-label">${priLabel[p]}</div>
-      <div class="chart-bar-bg"><div class="chart-bar" style="width:${Math.round(all/maxVal*100)}%;background:${priColors[p]}"></div></div>
-      <div class="chart-val">${all}개</div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('chartOverlay').classList.add('open');
+  if (enemiesRemaining <= 0 && enemies.length === 0) {
+    // bonus + next wave
+    score += 250;
+    scoreVal.textContent = score;
+    player.health = Math.min(player.maxHealth, player.health + 25);
+    updateHealth();
+    setTimeout(() => { if (state === State.PLAYING) startWave(wave + 1); }, 2200);
+    showWaveAnnounce('웨이브 클리어!', '+250 보너스 · 체력 회복');
+  }
 }
-function closeChart() { document.getElementById('chartOverlay').classList.remove('open'); }
-document.getElementById('chartOverlay').addEventListener('click', function(e) { if(e.target===this) closeChart(); });
 
-// ─── NOTIFICATIONS ───
-async function toggleNotifications() {
-  const btn = document.getElementById('notifBtn');
-  if (Notification.permission === 'granted') {
-    btn.classList.toggle('enabled');
-    if (btn.classList.contains('enabled')) {
-      btn.textContent = '🔔 알림 ON';
-      localStorage.setItem('notif', 'on');
-      scheduleNotifications();
+function startReload() {
+  if (reloading || ammo === weaponDef.magSize) return;
+  reloading = true;
+  reloadTimer = weaponDef.reloadTime;
+  reloadHint.textContent = '재장전 중…';
+  reloadSound();
+}
+
+function updateAmmo() {
+  ammoVal.innerHTML = `${ammo}<span class="mag"> / ${weaponDef.magSize}</span>`;
+}
+function updateHealth() {
+  const pct = Math.max(0, player.health) / player.maxHealth * 100;
+  healthBar.style.width = pct + '%';
+  healthBar.style.background = pct > 50
+    ? 'linear-gradient(90deg,#60f0a0,#c8f060)'
+    : pct > 25 ? 'linear-gradient(90deg,#f0c060,#f0a060)'
+    : 'linear-gradient(90deg,#f06060,#f08060)';
+}
+
+function damagePlayer(dmg) {
+  player.health -= dmg;
+  updateHealth();
+  damageVignette.style.opacity = Math.min(0.9, dmg / 20);
+  setTimeout(() => damageVignette.style.opacity = 0, 120);
+  hurtSound();
+  if (player.health <= 0) gameOver();
+}
+
+// ---------- Movement & collision ----------
+const tmpBox = new THREE.Box3();
+const playerHalf = new THREE.Vector3(0.4, 0.9, 0.4);
+
+function resolveCollisions(pos) {
+  tmpBox.min.set(pos.x - playerHalf.x, pos.y - playerHalf.y, pos.z - playerHalf.z);
+  tmpBox.max.set(pos.x + playerHalf.x, pos.y + playerHalf.y, pos.z + playerHalf.z);
+  for (const c of colliders) {
+    if (!tmpBox.intersectsBox(c)) continue;
+    // compute minimal translation on X/Z only
+    const overlapX = Math.min(tmpBox.max.x - c.min.x, c.max.x - tmpBox.min.x);
+    const overlapZ = Math.min(tmpBox.max.z - c.min.z, c.max.z - tmpBox.min.z);
+    if (overlapX < overlapZ) {
+      const sign = (pos.x > (c.min.x + c.max.x) / 2) ? 1 : -1;
+      pos.x += sign * overlapX;
     } else {
-      btn.textContent = '🔔 알림';
-      localStorage.setItem('notif', 'off');
+      const sign = (pos.z > (c.min.z + c.max.z) / 2) ? 1 : -1;
+      pos.z += sign * overlapZ;
     }
-  } else {
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      btn.classList.add('enabled');
-      btn.textContent = '🔔 알림 ON';
-      localStorage.setItem('notif', 'on');
-      scheduleNotifications();
+    tmpBox.min.set(pos.x - playerHalf.x, pos.y - playerHalf.y, pos.z - playerHalf.z);
+    tmpBox.max.set(pos.x + playerHalf.x, pos.y + playerHalf.y, pos.z + playerHalf.z);
+  }
+  // arena bounds
+  const lim = ARENA - 1.2;
+  pos.x = Math.max(-lim, Math.min(lim, pos.x));
+  pos.z = Math.max(-lim, Math.min(lim, pos.z));
+}
+
+const forward = new THREE.Vector3();
+const right = new THREE.Vector3();
+const upVec = new THREE.Vector3(0, 1, 0);
+
+function updatePlayer(dt) {
+  const obj = controls.getObject();
+  // movement direction relative to camera yaw
+  camera.getWorldDirection(forward);
+  forward.y = 0; forward.normalize();
+  right.crossVectors(forward, upVec).normalize();
+
+  const speed = player.speed * (keys['shift'] ? player.runMul : 1);
+  const dir = new THREE.Vector3();
+  if (move.f) dir.add(forward);
+  if (move.b) dir.sub(forward);
+  if (move.r) dir.add(right);
+  if (move.l) dir.sub(right);
+  if (dir.lengthSq() > 0) dir.normalize().multiplyScalar(speed * dt);
+  obj.position.add(dir);
+
+  // gravity / jump
+  player.velY -= 22 * dt;
+  obj.position.y += player.velY * dt;
+  if (obj.position.y <= 1.7) {
+    obj.position.y = 1.7; player.velY = 0; player.onGround = true;
+  } else player.onGround = false;
+
+  resolveCollisions(obj.position);
+
+  // weapon bob
+  const moving = dir.lengthSq() > 0 && player.onGround;
+  if (moving) {
+    bobT += dt * (keys['shift'] ? 14 : 9);
+    weapon.position.y = -0.26 + Math.sin(bobT) * 0.012;
+    weapon.position.x = 0.28 + Math.cos(bobT * 0.5) * 0.008;
+  }
+  // recoil recovery
+  weapon.position.z += (-0.55 - weapon.position.z) * Math.min(1, dt * 12);
+  weapon.rotation.x += (0 - weapon.rotation.x) * Math.min(1, dt * 12);
+}
+let bobT = 0;
+
+function updateEnemies(dt) {
+  const p = controls.getObject().position;
+  for (const e of enemies) {
+    const m = e.mesh;
+    const dx = p.x - m.position.x, dz = p.z - m.position.z;
+    const dist = Math.hypot(dx, dz);
+    // move toward player
+    if (dist > 1.6) {
+      const vx = dx / dist * e.speed * dt;
+      const vz = dz / dist * e.speed * dt;
+      m.position.x += vx; m.position.z += vz;
+      // simple obstacle avoidance via collision push-out
+      pushEnemyOut(m.position);
+    }
+    // face player
+    m.rotation.y = Math.atan2(dx, dz);
+    // bob walk
+    m.position.y = 1.0 + Math.abs(Math.sin(performance.now() * 0.006 + m.id)) * 0.08;
+
+    // attack
+    e.atkCooldown -= dt;
+    if (dist < 2.2 && e.atkCooldown <= 0) {
+      damagePlayer(8 + wave * 1.2);
+      e.atkCooldown = 0.8;
+    }
+
+    // hit flash decay
+    if (e.hitFlash > 0) {
+      e.hitFlash -= dt;
+      m.material.emissive.setHex(0xffffff);
+      m.material.emissiveIntensity = 1;
+    } else {
+      m.material.emissive.setHex(0x300808);
+      m.material.emissiveIntensity = 1;
+      // hp tint
+      const k = e.hp / e.maxHp;
+      m.material.color.setRGB(0.94, 0.38 * k, 0.38 * k);
     }
   }
 }
 
-function scheduleNotifications() {
-  const now = new Date();
-  const todayStr = today();
-  tasks.filter(t => !t.done && t.date).forEach(t => {
-    const daysLeft = Math.ceil((new Date(t.date) - now) / 86400000);
-    if (daysLeft === 1) {
-      setTimeout(() => {
-        new Notification('⚠ 내일 마감!', { body: t.title, icon: '📋' });
-      }, 1000);
-    } else if (daysLeft === 0) {
-      setTimeout(() => {
-        new Notification('🔴 오늘 마감!', { body: t.title, icon: '📋' });
-      }, 500);
+function pushEnemyOut(pos) {
+  for (const c of colliders) {
+    if (pos.x > c.min.x - 0.5 && pos.x < c.max.x + 0.5 &&
+        pos.z > c.min.z - 0.5 && pos.z < c.max.z + 0.5 &&
+        pos.y > c.min.y && pos.y < c.max.y) {
+      const ox = Math.min((c.max.x + 0.5) - pos.x, pos.x - (c.min.x - 0.5));
+      const oz = Math.min((c.max.z + 0.5) - pos.z, pos.z - (c.min.z - 0.5));
+      if (ox < oz) pos.x += (pos.x > (c.min.x+c.max.x)/2 ? ox : -ox);
+      else pos.z += (pos.z > (c.min.z+c.max.z)/2 ? oz : -oz);
     }
-  });
-}
-
-function initNotifBtn() {
-  const btn = document.getElementById('notifBtn');
-  if (localStorage.getItem('notif') === 'on' && Notification.permission === 'granted') {
-    btn.classList.add('enabled');
-    btn.textContent = '🔔 알림 ON';
-    scheduleNotifications();
   }
 }
 
-
-// ─── PIN MEMO ───
-// stickies를 핀메모 단일 텍스트로 재활용 (시트 연동 유지)
-let stickies = JSON.parse(localStorage.getItem('biseo_stickies') || '[]');
-
-function saveStickies() { saveTasks(); }
-
-function savePinMemo() {
-  const text = document.getElementById('pinMemoTextarea').value;
-  stickies = [{ id: 'pin', text }];
-  localStorage.setItem('biseo_stickies', JSON.stringify(stickies));
-  saveTasks();
-}
-
-function clearPinMemo() {
-  if (!confirm('메모를 지울까요?')) return;
-  document.getElementById('pinMemoTextarea').value = '';
-  stickies = [{ id: 'pin', text: '' }];
-  saveTasks();
-}
-
-function renderStickies() {
-  const ta = document.getElementById('pinMemoTextarea');
-  if (!ta) return;
-  const pin = stickies.find(s => s.id === 'pin') || stickies[0];
-  ta.value = pin ? pin.text : '';
-}
-
-// ─── QUICK LINKS ───
-let links = JSON.parse(localStorage.getItem('biseo_links') || '[]');
-
-function saveLinks() { saveTasks(); }
-
-function openLinkModal() { document.getElementById('linkModalOverlay').classList.add('open'); setTimeout(()=>document.getElementById('lName').focus(),100); }
-function closeLinkModal() { document.getElementById('linkModalOverlay').classList.remove('open'); document.getElementById('lName').value=''; document.getElementById('lUrl').value=''; }
-
-function saveLink() {
-  const name = document.getElementById('lName').value.trim();
-  let url = document.getElementById('lUrl').value.trim();
-  if (!name || !url) return;
-  if (!url.startsWith('http')) url = 'https://' + url;
-  links.push({ id: Date.now().toString(), name, url });
-  saveLinks(); closeLinkModal(); renderLinks();
-}
-
-function deleteLink(id, e) {
-  e.preventDefault(); e.stopPropagation();
-  links = links.filter(l => l.id !== id);
-  saveLinks(); renderLinks();
-}
-
-function getFaviconUrl(url) {
-  try {
-    const domain = new URL(url).hostname;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-  } catch { return ''; }
-}
-
-function renderLinks() {
-  const list = document.getElementById('linkList');
-  if (!list) return;
-  if (links.length === 0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">링크가 없습니다.</div>';
-    return;
+function updateSparks(dt) {
+  for (let i = sparkPool.length - 1; i >= 0; i--) {
+    const s = sparkPool[i];
+    s.life -= dt;
+    const arr = s.geo.attributes.position.array;
+    for (let j = 0; j < s.vels.length; j++) {
+      arr[j*3]   += s.vels[j].x * dt;
+      arr[j*3+1] += s.vels[j].y * dt;
+      arr[j*3+2] += s.vels[j].z * dt;
+      s.vels[j].y -= 8 * dt;
+    }
+    s.geo.attributes.position.needsUpdate = true;
+    s.pts.material.opacity = Math.max(0, s.life / 0.4);
+    if (s.life <= 0) {
+      scene.remove(s.pts); s.geo.dispose(); s.pts.material.dispose();
+      sparkPool.splice(i, 1);
+    }
   }
-  list.innerHTML = links.map(l => `
-    <a class="link-item" href="${l.url}" target="_blank" rel="noopener">
-      <img class="link-favicon" src="${getFaviconUrl(l.url)}" onerror="this.style.display='none'" alt="">
-      <span class="link-name">${l.name}</span>
-      <button class="link-del" onclick="deleteLink('${l.id}',event)">✕</button>
-    </a>`).join('');
 }
 
-document.getElementById('linkModalOverlay').addEventListener('click', function(e) { if(e.target===this) closeLinkModal(); });
-document.getElementById('lUrl').addEventListener('keydown', function(e) { if(e.key==='Enter') saveLink(); });
-
-
-// ─── MEETING NOTES ───
-let recognition = null;
-let isRecording = false;
-let transcriptText = '';
-let meetingNotes = JSON.parse(localStorage.getItem('biseo_meetings') || '[]');
-
-function openMeeting() {
-  renderMeetingSaved();
-  document.getElementById('meetingOverlay').classList.add('open');
+// ---------- Game flow ----------
+function resetGame() {
+  // clear enemies
+  for (const e of enemies) scene.remove(e.mesh);
+  enemies.length = 0;
+  for (const s of sparkPool) scene.remove(s.pts);
+  sparkPool.length = 0;
+  score = 0; wave = 0; enemiesRemaining = 0;
+  player.health = player.maxHealth; player.velY = 0;
+  ammo = weaponDef.magSize; reloading = false; reloadTimer = 0; fireCooldown = 0;
+  controls.getObject().position.set(0, 1.7, 0);
+  camera.rotation.set(0, 0, 0);
+  scoreVal.textContent = '0';
+  enemyVal.textContent = '0';
+  reloadHint.textContent = '';
+  updateAmmo(); updateHealth();
 }
-function closeMeeting() {
-  if (isRecording) stopRecording();
-  document.getElementById('meetingOverlay').classList.remove('open');
+
+function startGame() {
+  resetGame();
+  state = State.PLAYING;
+  startScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+  pauseScreen.classList.add('hidden');
+  hud.style.display = 'block';
+  controls.lock();
+  audio(); // unlock audio context
+  startWave(1);
 }
-document.getElementById('meetingOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeMeeting();
+
+function gameOver() {
+  state = State.OVER;
+  controls.unlock();
+  $('finalScore').textContent = `최종 점수: ${score}`;
+  $('finalWave').textContent = `도달 웨이브: ${wave}`;
+  gameOverScreen.classList.remove('hidden');
+  hud.style.display = 'none';
+}
+
+function pauseGame() {
+  if (state !== State.PLAYING) return;
+  state = State.PAUSED;
+  pauseScreen.classList.remove('hidden');
+}
+function resumeGame() {
+  if (state !== State.PAUSED) return;
+  pauseScreen.classList.add('hidden');
+  controls.lock();
+}
+
+// ---------- Input ----------
+$('startBtn').addEventListener('click', startGame);
+$('restartBtn').addEventListener('click', startGame);
+$('resumeBtn').addEventListener('click', resumeGame);
+
+controls.addEventListener('lock', () => {
+  if (state === State.PAUSED) state = State.PLAYING;
+});
+controls.addEventListener('unlock', () => {
+  if (state === State.PLAYING) pauseGame();
 });
 
-function startRecording() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('이 브라우저는 음성인식을 지원하지 않아요. Chrome을 사용해주세요!');
-    return;
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 'w') move.f = 1;
+  if (k === 's') move.b = 1;
+  if (k === 'a') move.l = 1;
+  if (k === 'd') move.r = 1;
+  if (k === 'r') startReload();
+  if (k === ' ' && player.onGround && state === State.PLAYING) {
+    player.velY = 8.5; player.onGround = false;
   }
+});
+document.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  keys[k] = false;
+  if (k === 'w') move.f = 0;
+  if (k === 's') move.b = 0;
+  if (k === 'a') move.l = 0;
+  if (k === 'd') move.r = 0;
+});
 
-  recognition = new SpeechRecognition();
-  recognition.lang = document.getElementById('meetingLang').value;
-  recognition.continuous = true;
-  recognition.interimResults = true;
+let mouseDown = false;
+document.addEventListener('mousedown', e => {
+  if (e.button === 0 && state === State.PLAYING && controls.isLocked) mouseDown = true;
+});
+document.addEventListener('mouseup', e => { if (e.button === 0) mouseDown = false; });
 
-  recognition.onstart = () => {
-    isRecording = true;
-    document.getElementById('recStartBtn').style.display = 'none';
-    document.getElementById('recStopBtn').style.display = 'flex';
-    document.getElementById('recDot').classList.add('recording');
-    document.getElementById('recStatusText').textContent = '녹음 중...';
-  };
+// ---------- Resize ----------
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-  recognition.onresult = (e) => {
-    let interim = '';
-    let final = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        final += e.results[i][0].transcript;
-      } else {
-        interim += e.results[i][0].transcript;
+// ---------- Loop ----------
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+
+  // decay muzzle flash
+  if (muzzle.intensity > 0) muzzle.intensity = Math.max(0, muzzle.intensity - dt * 40);
+  if (muzzleSprite.material.opacity > 0) muzzleSprite.material.opacity = Math.max(0, muzzleSprite.material.opacity - dt * 8);
+
+  if (state === State.PLAYING) {
+    fireCooldown = Math.max(0, fireCooldown - dt);
+    if (reloading) {
+      reloadTimer -= dt;
+      if (reloadTimer <= 0) {
+        reloading = false; ammo = weaponDef.magSize;
+        reloadHint.textContent = ''; updateAmmo();
       }
     }
-    if (final) transcriptText += final + ' ';
-    const display = transcriptText + (interim ? `[${interim}]` : '');
-    const el = document.getElementById('meetingTranscript');
-    el.textContent = display || '';
-    el.scrollTop = el.scrollHeight;
-  };
+    if (mouseDown) shoot();
 
-  recognition.onerror = (e) => {
-    console.error('Speech error:', e.error);
-    if (e.error === 'not-allowed') {
-      alert('마이크 권한을 허용해주세요!');
-    }
-    stopRecording();
-  };
-
-  recognition.onend = () => {
-    if (isRecording) recognition.start(); // 자동 재시작 (연속 녹음)
-  };
-
-  // 빈 상태면 초기화
-  if (!transcriptText) {
-    document.getElementById('meetingTranscript').textContent = '';
+    updatePlayer(dt);
+    updateEnemies(dt);
+    updateSparks(dt);
   }
 
-  recognition.start();
+  renderer.render(scene, camera);
 }
 
-function stopRecording() {
-  if (recognition) {
-    isRecording = false;
-    recognition.onend = null;
-    recognition.stop();
-    recognition = null;
-  }
-  document.getElementById('recStartBtn').style.display = 'flex';
-  document.getElementById('recStopBtn').style.display = 'none';
-  document.getElementById('recDot').classList.remove('recording');
-  document.getElementById('recStatusText').textContent = '중지됨';
-}
+// ---------- Boot ----------
+loadingEl.style.display = 'none';
+startScreen.classList.remove('hidden');
+updateAmmo();
+updateHealth();
+animate();
 
-function clearTranscript() {
-  if (!confirm('텍스트를 지울까요?')) return;
-  transcriptText = '';
-  document.getElementById('meetingTranscript').innerHTML = '<span style="color:var(--muted);font-style:italic">녹음 시작 버튼을 누르면 음성이 자동으로 텍스트로 변환됩니다...</span>';
-  document.getElementById('recStatusText').textContent = '대기 중';
-}
-
-function copyTranscript() {
-  const text = transcriptText.trim();
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.meeting-copy-btn');
-    btn.textContent = '✓ 복사됨';
-    setTimeout(() => btn.textContent = '📋 복사', 1500);
-  });
-}
-
-function saveMeetingNote() {
-  const text = transcriptText.trim();
-  if (!text) { alert('저장할 내용이 없어요!'); return; }
-  const note = {
-    id: Date.now().toString(),
-    text,
-    date: new Date().toLocaleString('ko-KR')
-  };
-  meetingNotes.unshift(note);
-  localStorage.setItem('biseo_meetings', JSON.stringify(meetingNotes));
-  renderMeetingSaved();
-  alert('저장됐어요! 💾');
-}
-
-function deleteMeetingNote(id) {
-  meetingNotes = meetingNotes.filter(n => n.id !== id);
-  localStorage.setItem('biseo_meetings', JSON.stringify(meetingNotes));
-  renderMeetingSaved();
-}
-
-function renderMeetingSaved() {
-  const section = document.getElementById('meetingSavedSection');
-  const list = document.getElementById('meetingSavedList');
-  if (!meetingNotes.length) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  list.innerHTML = meetingNotes.map(n => `
-    <div class="meeting-saved-item">
-      <div class="meeting-saved-item-header">
-        <span class="meeting-saved-item-date">${n.date}</span>
-        <button class="meeting-saved-item-del" onclick="deleteMeetingNote('${n.id}')">✕</button>
-      </div>
-      <div class="meeting-saved-item-text">${n.text}</div>
-    </div>`).join('');
-}
-
-
-// ─── VIEW TABS ───
-let currentView = 'list';
-function switchView(v) {
-  currentView = v;
-  document.getElementById('listView').style.display = v === 'list' ? 'block' : 'none';
-  document.getElementById('calView').classList.toggle('show', v === 'cal');
-  document.getElementById('tabList').classList.toggle('active', v === 'list');
-  document.getElementById('tabCal').classList.toggle('active', v === 'cal');
-  if (v === 'cal') renderCalendar();
-}
-
-// ─── CALENDAR ───
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
-const DAY_LABELS = ['일','월','화','수','목','금','토'];
-
-function calMove(d) { calMonth += d; if (calMonth > 11){calMonth=0;calYear++;} if (calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
-
-function renderCalendar() {
-  const todayStr = today();
-  document.getElementById('calMonth').textContent = `${calYear}년 ${calMonth+1}월`;
-  const grid = document.getElementById('calGrid');
-
-  // 요일 헤더
-  let html = DAY_LABELS.map(d => `<div class="cal-day-label">${d}</div>`).join('');
-
-  const firstDay = new Date(calYear, calMonth, 1).getDay();
-  const lastDate = new Date(calYear, calMonth+1, 0).getDate();
-  const prevLast = new Date(calYear, calMonth, 0).getDate();
-
-  // 이전 달 빈칸
-  for (let i = 0; i < firstDay; i++) {
-    const d = prevLast - firstDay + 1 + i;
-    html += `<div class="cal-cell other-month"><div class="cal-date">${d}</div></div>`;
-  }
-
-  // 이번 달
-  for (let d = 1; d <= lastDate; d++) {
-    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday = dateStr === todayStr;
-    const dayTasks = tasks.filter(t => t.date === dateStr);
-    const hasTasks = dayTasks.length > 0;
-
-    const taskDots = dayTasks.slice(0,3).map(t =>
-      `<div class="cal-task-dot p-${t.priority} ${t.done?'done':''}">${t.title}</div>`
-    ).join('');
-
-    html += `<div class="cal-cell ${isToday?'today':''} ${hasTasks?'has-task':''}">
-      <div class="cal-date">${d}</div>
-      ${taskDots}
-      ${dayTasks.length > 3 ? `<div style="font-size:10px;color:var(--muted)">+${dayTasks.length-3}개</div>` : ''}
-    </div>`;
-  }
-
-  // 다음 달 빈칸
-  const total = firstDay + lastDate;
-  const remain = total % 7 === 0 ? 0 : 7 - (total % 7);
-  for (let i = 1; i <= remain; i++) {
-    html += `<div class="cal-cell other-month"><div class="cal-date">${i}</div></div>`;
-  }
-
-  grid.innerHTML = html;
-}
-
-// ─── BRIEFING ───
-function showBriefing() {
-  const now = new Date();
-  const h = now.getHours();
-  const greeting = h < 12 ? '좋은 아침입니다' : h < 18 ? '안녕하세요' : '수고 많으셨습니다';
-  document.getElementById('briefingGreeting').textContent = `${greeting}, 광민님 ✦`;
-
-  const days = ['일','월','화','수','목','금','토'];
-  document.getElementById('briefingDate').textContent =
-    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${days[now.getDay()]})`;
-
-  const active = tasks.filter(t => !t.done);
-  const todayTasks = active.filter(isTodayDue);
-  const overdue = active.filter(isOverdue);
-
-  document.getElementById('briefingStats').innerHTML = `
-    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--accent)">${active.length}</div><div class="briefing-stat-lbl">진행중</div></div>
-    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--yellow)">${todayTasks.length}</div><div class="briefing-stat-lbl">오늘 마감</div></div>
-    <div class="briefing-stat"><div class="briefing-stat-num" style="color:var(--red)">${overdue.length}</div><div class="briefing-stat-lbl">지연</div></div>
-  `;
-
-  const priColor = { high:'var(--red)', mid:'var(--yellow)', low:'var(--green)' };
-  const showTasks = [...overdue, ...todayTasks].slice(0, 5);
-  document.getElementById('briefingTasks').innerHTML = showTasks.length
-    ? showTasks.map(t => `<div class="briefing-task-item">
-        <div class="briefing-pri-dot" style="background:${priColor[t.priority]}"></div>
-        <span style="flex:1">${t.title}</span>
-        ${t.time ? `<span style="font-size:11px;color:var(--muted);font-family:monospace">${t.time}</span>` : ''}
-      </div>`).join('')
-    : '<div style="color:var(--muted);font-size:13px">오늘 마감 태스크가 없어요 🎉</div>';
-
-  document.getElementById('briefingOverlay').classList.add('open');
-}
-
-function closeBriefing() {
-  document.getElementById('briefingOverlay').classList.remove('open');
-  sessionStorage.setItem('briefing_shown', '1');
-}
-
-// ─── SCRAPBOOK ───
-let scraps = JSON.parse(localStorage.getItem('biseo_scraps') || '[]');
-function saveScraps() { localStorage.setItem('biseo_scraps', JSON.stringify(scraps)); }
-
-function openScrapModal() { document.getElementById('scrapModalOverlay').classList.add('open'); setTimeout(()=>document.getElementById('scrapTitle').focus(),100); }
-function closeScrapModal() {
-  document.getElementById('scrapModalOverlay').classList.remove('open');
-  ['scrapTitle','scrapUrl','scrapNote','scrapTag'].forEach(id => document.getElementById(id).value = '');
-}
-
-function saveScrap() {
-  const title = document.getElementById('scrapTitle').value.trim();
-  if (!title) return;
-  let url = document.getElementById('scrapUrl').value.trim();
-  if (url && !url.startsWith('http')) url = 'https://' + url;
-  scraps.unshift({
-    id: Date.now().toString(),
-    title, url,
-    note: document.getElementById('scrapNote').value.trim(),
-    tag: document.getElementById('scrapTag').value.trim(),
-    createdAt: new Date().toISOString()
-  });
-  saveScraps(); closeScrapModal(); renderScraps();
-}
-
-function deleteScrap(id) {
-  scraps = scraps.filter(s => s.id !== id);
-  saveScraps(); renderScraps();
-}
-
-function renderScraps() {
-  const list = document.getElementById('scrapList');
-  if (!list) return;
-  if (!scraps.length) { list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0 8px">스크랩이 없습니다.</div>'; return; }
-  list.innerHTML = scraps.map(s => `
-    <div class="scrap-item">
-      <button class="scrap-item-del" onclick="deleteScrap('${s.id}')">✕</button>
-      <div class="scrap-item-title">${s.title}</div>
-      ${s.url ? `<a class="scrap-item-url" href="${s.url}" target="_blank">${s.url}</a>` : ''}
-      ${s.note ? `<div class="scrap-item-note">${s.note}</div>` : ''}
-      ${s.tag ? `<span class="scrap-tag">${s.tag}</span>` : ''}
-    </div>`).join('');
-}
-
-document.getElementById('scrapModalOverlay').addEventListener('click', function(e) { if(e.target===this) closeScrapModal(); });
-document.getElementById('briefingOverlay').addEventListener('click', function(e) { if(e.target===this) closeBriefing(); });
-
-
-// ─── TASK LINKS ───
-let modalLinks = []; // 모달에서 임시 저장
-
-function getLinkIcon(url) {
-  if (!url) return '🔗';
-  if (url.includes('drive.google.com')) return '📁';
-  if (url.includes('docs.google.com')) return '📄';
-  if (url.includes('sheets.google.com')) return '📊';
-  if (url.includes('slides.google.com')) return '📑';
-  if (url.includes('notion.so')) return '📝';
-  if (url.includes('github.com')) return '💻';
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return '▶️';
-  if (url.includes('figma.com')) return '🎨';
-  return '🔗';
-}
-
-function renderModalLinks() {
-  const list = document.getElementById('modalLinkList');
-  if (!list) return;
-  if (!modalLinks.length) { list.innerHTML = ''; return; }
-  list.innerHTML = modalLinks.map((l, i) => `
-    <div class="modal-link-item">
-      <span class="modal-link-item-icon">${getLinkIcon(l.url)}</span>
-      <span class="modal-link-item-label">${l.label || l.url}</span>
-      <button class="modal-link-item-del" onclick="removeModalLink(${i})">✕</button>
-    </div>`).join('');
-}
-
-function addModalLink() {
-  let url = document.getElementById('modalLinkInput').value.trim();
-  const label = document.getElementById('modalLinkLabel').value.trim();
-  if (!url) return;
-  if (!url.startsWith('http')) url = 'https://' + url;
-  modalLinks.push({ url, label: label || '' });
-  document.getElementById('modalLinkInput').value = '';
-  document.getElementById('modalLinkLabel').value = '';
-  renderModalLinks();
-}
-
-function addGDriveLink() {
-  const url = prompt('Google Drive 파일/폴더 링크를 붙여넣으세요:');
-  if (!url) return;
-  const label = prompt('링크 이름 (예: Q1 보고서):', '');
-  modalLinks.push({ url: url.trim(), label: label || 'Google Drive' });
-  renderModalLinks();
-}
-
-function removeModalLink(idx) {
-  modalLinks.splice(idx, 1);
-  renderModalLinks();
-}
-
-// ─── MOBILE NAV ───
-initNotifBtn();
-function mobileTab(tab) {
-  const sidebar = document.querySelector('.sidebar');
-  const main = document.querySelector('.main');
-
-  sidebar.classList.remove('mobile-open');
-  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
-
-  if (tab === 'main') {
-    main.style.display = 'block';
-    document.getElementById('navMain').classList.add('active');
-  } else if (tab === 'filter') {
-    main.style.display = 'none';
-    sidebar.classList.add('mobile-open');
-    document.getElementById('navFilter').classList.add('active');
-  }
-}
-
-// ─── INIT ───
-initPin();
-renderStickies();
-renderLinks();
-renderScraps();
-loadTasks().then(() => {
-  // 하루 한 번 브리핑 표시
-  if (!sessionStorage.getItem('briefing_shown')) {
-    setTimeout(showBriefing, 800);
-  }
-});
 </script>
 </body>
 </html>
