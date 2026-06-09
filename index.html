@@ -2,8 +2,10 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0e0f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>표적 작전 — 3D FPS</title>
 <style>
   :root {
@@ -16,7 +18,8 @@
     --muted: #8b90a0;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
+    touch-action: none; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
   body {
     font-family: 'Segoe UI', 'Noto Sans KR', system-ui, sans-serif;
     color: var(--text);
@@ -154,6 +157,63 @@
   #waveAnnounce.show { opacity: 1; }
   #waveAnnounce .big { font-size: 52px; font-weight: 800; color: var(--accent2); letter-spacing: 4px; }
   #waveAnnounce .small { font-size: 16px; color: var(--muted); letter-spacing: 2px; }
+
+  /* ===== Touch controls (mobile) ===== */
+  #touchControls { display: none; }            /* shown only on touch devices */
+  body.touch #touchControls { display: block; }
+
+  /* virtual joystick */
+  #joystick {
+    position: absolute; z-index: 12; width: 130px; height: 130px;
+    border-radius: 50%; border: 2px solid rgba(200,240,96,.35);
+    background: rgba(20,22,30,.35); pointer-events: none;
+    transform: translate(-50%, -50%); opacity: 0; transition: opacity .15s ease;
+  }
+  #joystick.active { opacity: 1; }
+  #joystickKnob {
+    position: absolute; top: 50%; left: 50%; width: 56px; height: 56px;
+    margin: -28px 0 0 -28px; border-radius: 50%;
+    background: rgba(200,240,96,.55); box-shadow: 0 0 16px rgba(200,240,96,.5);
+  }
+
+  /* action buttons */
+  .tbtn {
+    position: absolute; z-index: 12; pointer-events: auto;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,.18);
+    background: rgba(30,32,41,.55); color: var(--text);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; -webkit-user-select: none; user-select: none;
+    backdrop-filter: blur(2px); transition: transform .08s, background .1s;
+  }
+  .tbtn:active, .tbtn.pressed { transform: scale(.92); background: rgba(200,240,96,.3); }
+  #btnFire {
+    right: 28px; bottom: 130px; width: 110px; height: 110px;
+    font-size: 13px; letter-spacing: 1px;
+    border-color: rgba(240,96,96,.5); background: rgba(240,96,96,.22);
+  }
+  #btnFire:active, #btnFire.pressed { background: rgba(240,96,96,.45); }
+  #btnReload { right: 150px; bottom: 150px; width: 64px; height: 64px; font-size: 22px; }
+  #btnJump   { right: 56px;  bottom: 250px; width: 64px; height: 64px; font-size: 22px; }
+  #btnRun    { left: 24px;   bottom: 200px; width: 64px; height: 64px; font-size: 11px; letter-spacing: 1px; }
+  #btnRun.on { background: rgba(96,180,240,.45); border-color: rgba(96,180,240,.6); }
+  #btnPause  { top: 22px; left: 50%; transform: translateX(-50%); width: 44px; height: 44px; font-size: 18px; }
+  #btnPause:active { transform: translateX(-50%) scale(.92); }
+
+  /* responsive HUD for small screens */
+  @media (max-width: 760px), (pointer: coarse) {
+    .stat-value { font-size: 22px; }
+    #leftStats { left: 14px; top: 14px; }
+    #rightStats { right: 64px; top: 14px; }
+    #bottomBar { padding: 0 16px; bottom: 16px; }
+    #healthWrap { width: 150px; }
+    #ammoVal { font-size: 26px; }
+    #ammoVal .mag { font-size: 15px; }
+    .title { font-size: 40px; letter-spacing: 2px; }
+    .subtitle { font-size: 13px; margin-bottom: 26px; }
+    #waveAnnounce .big { font-size: 34px; }
+    .controls { grid-template-columns: auto auto; gap: 8px 18px; font-size: 12px; }
+    .btn { padding: 14px 36px; font-size: 16px; }
+  }
 </style>
 </head>
 <body>
@@ -187,6 +247,16 @@
       <div id="ammoVal">30<span class="mag"> / 30</span></div>
       <div id="reloadHint"></div>
     </div>
+  </div>
+
+  <!-- Touch controls (mobile only) -->
+  <div id="touchControls">
+    <div id="joystick"><div id="joystickKnob"></div></div>
+    <div id="btnFire" class="tbtn">발사</div>
+    <div id="btnReload" class="tbtn" aria-label="재장전">⟳</div>
+    <div id="btnJump" class="tbtn" aria-label="점프">⤒</div>
+    <div id="btnRun" class="tbtn">달리기</div>
+    <div id="btnPause" class="tbtn" aria-label="일시정지">❚❚</div>
   </div>
 </div>
 
@@ -696,13 +766,15 @@ function updatePlayer(dt) {
   forward.y = 0; forward.normalize();
   right.crossVectors(forward, upVec).normalize();
 
-  const speed = player.speed * (keys['shift'] ? player.runMul : 1);
+  const running = keys['shift'] || touchRun;
+  const speed = player.speed * (running ? player.runMul : 1);
   const dir = new THREE.Vector3();
-  if (move.f) dir.add(forward);
-  if (move.b) dir.sub(forward);
-  if (move.r) dir.add(right);
-  if (move.l) dir.sub(right);
-  if (dir.lengthSq() > 0) dir.normalize().multiplyScalar(speed * dt);
+  const mx = (move.r - move.l) + touchMove.x;   // strafe (analog)
+  const my = (move.f - move.b) + touchMove.y;   // forward (analog)
+  dir.addScaledVector(right, mx);
+  dir.addScaledVector(forward, my);
+  if (dir.length() > 1) dir.normalize();         // cap diagonal / keep analog
+  dir.multiplyScalar(speed * dt);
   obj.position.add(dir);
 
   // gravity / jump
@@ -717,7 +789,7 @@ function updatePlayer(dt) {
   // weapon bob
   const moving = dir.lengthSq() > 0 && player.onGround;
   if (moving) {
-    bobT += dt * (keys['shift'] ? 14 : 9);
+    bobT += dt * (running ? 14 : 9);
     weapon.position.y = -0.26 + Math.sin(bobT) * 0.012;
     weapon.position.x = 0.28 + Math.cos(bobT * 0.5) * 0.008;
   }
@@ -826,14 +898,15 @@ function startGame() {
   gameOverScreen.classList.add('hidden');
   pauseScreen.classList.add('hidden');
   hud.style.display = 'block';
-  controls.lock();
+  if (!isTouch) controls.lock();
   audio(); // unlock audio context
+  if (actx && actx.state === 'suspended') actx.resume();
   startWave(1);
 }
 
 function gameOver() {
   state = State.OVER;
-  controls.unlock();
+  if (!isTouch) controls.unlock();
   $('finalScore').textContent = `최종 점수: ${score}`;
   $('finalWave').textContent = `도달 웨이브: ${wave}`;
   gameOverScreen.classList.remove('hidden');
@@ -848,7 +921,8 @@ function pauseGame() {
 function resumeGame() {
   if (state !== State.PAUSED) return;
   pauseScreen.classList.add('hidden');
-  controls.lock();
+  if (isTouch) state = State.PLAYING;
+  else controls.lock();
 }
 
 // ---------- Input ----------
@@ -860,7 +934,7 @@ controls.addEventListener('lock', () => {
   if (state === State.PAUSED) state = State.PLAYING;
 });
 controls.addEventListener('unlock', () => {
-  if (state === State.PLAYING) pauseGame();
+  if (!isTouch && state === State.PLAYING) pauseGame();
 });
 
 document.addEventListener('keydown', e => {
@@ -890,6 +964,102 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (e.button === 0) mouseDown = false; });
 
+// ---------- Touch input (mobile) ----------
+// primary pointer is coarse (phone/tablet) → touch mode; mouse laptops stay on keyboard/mouse
+const isTouch = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
+const touchMove = { x: 0, y: 0 };   // analog strafe / forward (-1..1)
+let touchRun = false;
+let touchFire = false;
+
+// manual look (used when pointer lock is unavailable on touch devices)
+const lookEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+const LOOK_SENS = 0.0042;
+function applyLook(dx, dy) {
+  lookEuler.setFromQuaternion(camera.quaternion);
+  lookEuler.y -= dx * LOOK_SENS;
+  lookEuler.x -= dy * LOOK_SENS;
+  const lim = Math.PI / 2 - 0.01;
+  lookEuler.x = Math.max(-lim, Math.min(lim, lookEuler.x));
+  camera.quaternion.setFromEuler(lookEuler);
+}
+
+if (isTouch) {
+  const joystick = $('joystick');
+  const knob = $('joystickKnob');
+  const JOY_MAX = 50;
+  let joyId = null, lookId = null, lookPX = 0, lookPY = 0;
+  const joyBase = { x: 0, y: 0 };
+
+  const inLeftZone = x => x < window.innerWidth * 0.45;
+
+  document.addEventListener('touchstart', e => {
+    if (state !== State.PLAYING) return;
+    for (const t of e.changedTouches) {
+      if (joyId === null && inLeftZone(t.clientX)) {
+        joyId = t.identifier;
+        joyBase.x = t.clientX; joyBase.y = t.clientY;
+        joystick.style.left = t.clientX + 'px';
+        joystick.style.top = t.clientY + 'px';
+        joystick.classList.add('active');
+        knob.style.transform = 'translate(0,0)';
+      } else if (lookId === null) {
+        lookId = t.identifier; lookPX = t.clientX; lookPY = t.clientY;
+      }
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyId) {
+        let dx = t.clientX - joyBase.x, dy = t.clientY - joyBase.y;
+        const mag = Math.hypot(dx, dy);
+        if (mag > JOY_MAX) { dx = dx / mag * JOY_MAX; dy = dy / mag * JOY_MAX; }
+        knob.style.transform = `translate(${dx}px,${dy}px)`;
+        touchMove.x = dx / JOY_MAX;
+        touchMove.y = -dy / JOY_MAX;   // drag up = move forward
+        touchRun = (mag / JOY_MAX) > 0.85;
+      } else if (t.identifier === lookId) {
+        applyLook(t.clientX - lookPX, t.clientY - lookPY);
+        lookPX = t.clientX; lookPY = t.clientY;
+      }
+    }
+    if (state === State.PLAYING) e.preventDefault();
+  }, { passive: false });
+
+  function endTouch(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === joyId) {
+        joyId = null; touchMove.x = 0; touchMove.y = 0; touchRun = false;
+        joystick.classList.remove('active');
+      }
+      if (t.identifier === lookId) lookId = null;
+    }
+  }
+  document.addEventListener('touchend', endTouch);
+  document.addEventListener('touchcancel', endTouch);
+
+  // action buttons — use touchstart/end so they don't grab the look drag
+  const bind = (el, onDown, onUp) => {
+    el.addEventListener('touchstart', e => {
+      e.preventDefault(); e.stopPropagation(); el.classList.add('pressed'); onDown && onDown();
+    }, { passive: false });
+    el.addEventListener('touchend', e => {
+      e.preventDefault(); e.stopPropagation(); el.classList.remove('pressed'); onUp && onUp();
+    }, { passive: false });
+    el.addEventListener('touchcancel', () => { el.classList.remove('pressed'); onUp && onUp(); });
+  };
+
+  bind($('btnFire'), () => { touchFire = true; }, () => { touchFire = false; });
+  bind($('btnReload'), () => startReload());
+  bind($('btnJump'), () => {
+    if (player.onGround && state === State.PLAYING) { player.velY = 8.5; player.onGround = false; }
+  });
+  const btnRun = $('btnRun');
+  bind(btnRun, () => { touchRun = true; btnRun.classList.add('on'); },
+               () => { /* run latches via joystick; toggle off on release */ btnRun.classList.remove('on'); });
+  bind($('btnPause'), () => { if (state === State.PLAYING) pauseGame(); });
+}
+
 // ---------- Resize ----------
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -916,7 +1086,7 @@ function animate() {
         reloadHint.textContent = ''; updateAmmo();
       }
     }
-    if (mouseDown) shoot();
+    if (mouseDown || touchFire) shoot();
 
     updatePlayer(dt);
     updateEnemies(dt);
@@ -931,6 +1101,28 @@ loadingEl.style.display = 'none';
 startScreen.classList.remove('hidden');
 updateAmmo();
 updateHealth();
+
+// adapt start screen for touch devices
+if (isTouch) {
+  document.body.classList.add('touch');
+  const controlsEl = document.querySelector('#startScreen .controls');
+  if (controlsEl) controlsEl.innerHTML = `
+    <span><span class="key">왼쪽 드래그</span></span><span><b>이동 (꾹=달리기)</b></span>
+    <span><span class="key">오른쪽 드래그</span></span><span><b>조준</b></span>
+    <span><span class="key">발사</span></span><span><b>사격(누르고)</b></span>
+    <span><span class="key">⟳</span></span><span><b>재장전</b></span>
+    <span><span class="key">⤒</span></span><span><b>점프</b></span>
+    <span><span class="key">❚❚</span></span><span><b>일시정지</b></span>`;
+  $('pauseHint').textContent = '버튼을 눌러 작전을 개시하세요.';
+  $('startBtn').textContent = '작전 개시 ▶ (전체화면)';
+  // request fullscreen + landscape suggestion on start for a better mobile experience
+  $('startBtn').addEventListener('click', () => {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+  });
+}
+
 animate();
 
 </script>
