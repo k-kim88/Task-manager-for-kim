@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0e0f13">
-<title>푸시 알림 번역 & 미리보기</title>
+<title>푸시 알림 작성 & 기종별 미리보기</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -31,7 +31,6 @@
   header {
     padding: 20px 24px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(180deg, rgba(96,180,240,.06), transparent);
     position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);
     background-color: rgba(14,15,19,.85);
   }
@@ -46,8 +45,7 @@
   /* ===== Layout ===== */
   .wrap {
     max-width: 1240px; margin: 0 auto; padding: 24px;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
-    align-items: start;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;
   }
   @media (max-width: 920px) { .wrap { grid-template-columns: 1fr; } }
 
@@ -59,12 +57,11 @@
     font-size: 12px; letter-spacing: 2px; color: var(--muted);
     text-transform: uppercase; margin-bottom: 16px; font-weight: 600;
   }
+  @media (min-width: 921px) { .panel.preview { position: sticky; top: 92px; } }
 
   /* ===== Form ===== */
   .field { margin-bottom: 14px; }
-  .field label {
-    display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500;
-  }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; }
   input[type=text], textarea, select {
@@ -73,96 +70,64 @@
     font-family: inherit; font-size: 14px; transition: border-color .15s;
   }
   input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
-  textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+  textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
   select { cursor: pointer; appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%238b90a0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
   }
-  .icon-input { max-width: 70px; text-align: center; font-size: 20px; flex: none !important; width: 70px; }
+  .icon-input { text-align: center; font-size: 20px; flex: none !important; width: 70px; }
 
   .btn {
-    cursor: pointer; border: none; border-radius: 10px;
-    font-family: inherit; font-size: 14px; font-weight: 600;
-    padding: 12px 18px; transition: transform .1s, box-shadow .1s, background .15s;
+    cursor: pointer; border: none; border-radius: 10px; font-family: inherit;
+    font-size: 14px; font-weight: 600; padding: 12px 18px;
+    transition: transform .1s, box-shadow .1s, background .15s;
   }
   .btn:active { transform: translateY(1px); }
-  .btn-primary {
-    background: var(--accent); color: #0a0d12; width: 100%;
-    box-shadow: 0 6px 20px rgba(96,180,240,.25);
-  }
+  .btn-primary { background: var(--accent); color: #0a0d12; width: 100%; box-shadow: 0 6px 20px rgba(96,180,240,.25); }
   .btn-primary:hover { box-shadow: 0 8px 28px rgba(96,180,240,.4); }
   .btn-primary:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
-  .btn-ghost {
-    background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
-    padding: 8px 14px; font-size: 13px;
-  }
+  .btn-ghost { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); padding: 9px 14px; font-size: 13px; }
   .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
 
-  .note {
-    font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5;
-    display: flex; gap: 6px; align-items: flex-start;
-  }
+  .note { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; display: flex; gap: 6px; align-items: flex-start; }
   .note svg { flex-shrink: 0; margin-top: 1px; }
 
-  /* translation result cards */
-  .results { margin-top: 8px; }
+  /* language input cards (primary) */
   .lang-card {
     background: var(--surface2); border: 1px solid var(--border);
     border-radius: 12px; padding: 14px; margin-bottom: 12px;
   }
-  .lang-card .lc-head {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
-  }
+  .lang-card .lc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .lang-card .lc-flag { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
-  .lang-card .lc-flag .badge {
-    font-size: 10px; background: var(--bg); color: var(--accent2);
-    padding: 2px 7px; border-radius: 6px; letter-spacing: 1px;
-  }
-  .lang-card .lc-title { font-weight: 500; margin-bottom: 8px; font-size: 13.5px; }
-  .lang-card .lc-body { font-size: 13.5px; }
-  .copy-btn {
+  .lang-card .lc-flag .badge { font-size: 10px; background: var(--bg); color: var(--accent2); padding: 2px 7px; border-radius: 6px; letter-spacing: 1px; }
+  .lang-card .lc-actions { display: flex; gap: 6px; }
+  .mini-btn {
     background: none; border: 1px solid var(--border); color: var(--muted);
     border-radius: 7px; padding: 4px 10px; font-size: 11px; cursor: pointer;
     font-family: inherit; transition: all .15s;
   }
-  .copy-btn:hover { color: var(--accent2); border-color: var(--accent2); }
-  .copy-btn.done { color: var(--green); border-color: var(--green); }
+  .mini-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+  .mini-btn.done { color: var(--green); border-color: var(--green); }
+  .charcount { font-size: 10.5px; color: var(--muted); text-align: right; margin-top: 4px; }
+  .charcount.warn { color: var(--red); }
 
   /* ===== Preview ===== */
   .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-  .tab {
-    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
-    border-radius: 9px; padding: 8px 14px; font-size: 13px; cursor: pointer;
-    font-family: inherit; transition: all .15s;
-  }
+  .tab { background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 9px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-family: inherit; transition: all .15s; }
   .tab.active { background: var(--accent); color: #0a0d12; border-color: var(--accent); font-weight: 600; }
   .tab-sub { display: flex; gap: 6px; margin-bottom: 20px; }
   .tab-sub .tab { padding: 6px 14px; font-size: 12px; border-radius: 20px; }
 
   .stage { display: flex; justify-content: center; padding: 10px 0; }
 
-  /* phone frame */
-  .phone {
-    width: 300px; border-radius: 42px; padding: 12px;
-    background: #050608; box-shadow: 0 30px 60px rgba(0,0,0,.5), inset 0 0 0 2px #2a2d38;
-    position: relative;
-  }
-  .screen {
-    border-radius: 32px; overflow: hidden; position: relative; height: 540px;
-    background-size: cover; background-position: center;
-  }
+  .phone { width: 300px; border-radius: 42px; padding: 12px; background: #050608;
+    box-shadow: 0 30px 60px rgba(0,0,0,.5), inset 0 0 0 2px #2a2d38; position: relative; }
+  .screen { border-radius: 32px; overflow: hidden; position: relative; height: 540px; background-size: cover; background-position: center; }
   .screen.ios { background: linear-gradient(165deg, #2a3a5a 0%, #1a2238 40%, #3a2a4a 100%); }
   .screen.android { background: linear-gradient(165deg, #16322a 0%, #1a2430 50%, #2a1a30 100%); }
-  /* status bar */
-  .statusbar {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 14px 22px 6px; font-size: 13px; font-weight: 600; color: #fff;
-  }
-  .ios-notch {
-    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-    width: 110px; height: 26px; background: #050608; border-radius: 16px; z-index: 5;
-  }
-  /* clock big (ios lock) */
+  .statusbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px 6px; font-size: 13px; font-weight: 600; color: #fff; }
+  .ios-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 110px; height: 26px; background: #050608; border-radius: 16px; z-index: 5; }
   .lock-clock { text-align: center; color: #fff; margin-top: 14px; }
   .lock-clock .date { font-size: 14px; opacity: .9; font-weight: 500; }
   .lock-clock .time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
@@ -170,30 +135,18 @@
   .notif-area { padding: 16px 12px; display: flex; flex-direction: column; gap: 10px; }
   .notif-area.top { position: absolute; top: 46px; left: 0; right: 0; }
 
-  /* iOS notification */
-  .notif-ios {
-    background: rgba(245,245,247,.82); backdrop-filter: blur(20px);
-    border-radius: 18px; padding: 11px 13px; display: flex; gap: 10px;
-    color: #1a1a1a; box-shadow: 0 4px 20px rgba(0,0,0,.18);
-    animation: slidein .4s ease;
-  }
-  .notif-ios .nicon { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  .notif-ios { background: rgba(245,245,247,.82); backdrop-filter: blur(20px); border-radius: 18px; padding: 11px 13px;
+    display: flex; gap: 10px; color: #1a1a1a; box-shadow: 0 4px 20px rgba(0,0,0,.18); animation: slidein .4s ease; }
+  .notif-ios .nicon { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 20px;
     background: linear-gradient(135deg, var(--accent), var(--accent3)); }
   .notif-ios .ncontent { flex: 1; min-width: 0; }
   .notif-ios .nhead { display: flex; justify-content: space-between; font-size: 11px; color: #6a6a6e; margin-bottom: 1px; }
   .notif-ios .napp { font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
   .notif-ios .ntitle { font-weight: 600; font-size: 14px; line-height: 1.3; word-break: break-word; }
   .notif-ios .nbody { font-size: 13.5px; line-height: 1.35; margin-top: 1px; word-break: break-word; }
-
-  /* iOS banner (top) */
   .notif-banner { box-shadow: 0 8px 30px rgba(0,0,0,.35); }
 
-  /* Android notification */
-  .notif-android {
-    background: #1f1f23; border-radius: 24px; padding: 13px 15px; color: #e3e3e6;
-    box-shadow: 0 4px 18px rgba(0,0,0,.3); animation: slidein .4s ease;
-  }
+  .notif-android { background: #1f1f23; border-radius: 24px; padding: 13px 15px; color: #e3e3e6; box-shadow: 0 4px 18px rgba(0,0,0,.3); animation: slidein .4s ease; }
   .notif-android .ahead { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #b0b0b8; margin-bottom: 6px; }
   .notif-android .aicon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px;
     background: linear-gradient(135deg, var(--accent), var(--accent3)); }
@@ -204,15 +157,15 @@
 
   @keyframes slidein { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
 
-  .empty-hint { color: var(--muted); font-size: 13px; text-align: center; padding: 40px 0; }
-  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(10,13,18,.3);
-    border-top-color: #0a0d12; border-radius: 50%; animation: rot .6s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(139,144,160,.3); border-top-color: var(--accent2);
+    border-radius: 50%; animation: rot .6s linear infinite; vertical-align: -2px; margin-right: 5px; }
   @keyframes rot { to { transform: rotate(360deg); } }
 
-  details.settings { margin-top: 14px; }
-  details.settings summary { font-size: 12px; color: var(--muted); cursor: pointer; }
-  details.settings .field { margin-top: 12px; margin-bottom: 0; }
-  .charcount { font-size: 11px; color: var(--muted); text-align: right; margin-top: 4px; }
+  details.helper { margin-top: 6px; border: 1px dashed var(--border); border-radius: 12px; padding: 12px 14px; }
+  details.helper summary { font-size: 13px; color: var(--muted); cursor: pointer; font-weight: 500; }
+  details.helper[open] summary { margin-bottom: 12px; color: var(--text); }
+  details.helper .field { margin-bottom: 10px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
 </style>
 </head>
 <body>
@@ -220,8 +173,8 @@
 <header>
   <div class="logo">🔔</div>
   <div>
-    <h1>푸시 알림 번역 &amp; 미리보기</h1>
-    <p>한 · 日 · EN 자동 번역 후 기종별로 미리 확인하세요</p>
+    <h1>푸시 알림 작성 &amp; 미리보기</h1>
+    <p>한 · 日 · EN 문구를 작성하고 기종별로 미리 확인하세요</p>
   </div>
 </header>
 
@@ -240,50 +193,39 @@
         <label>앱 이름</label>
         <input type="text" id="appName" placeholder="예: FANCS" value="FANCS">
       </div>
-      <div class="field" style="flex:none; width:130px">
-        <label>원문 언어</label>
-        <select id="srcLang">
-          <option value="ko">한국어</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-        </select>
-      </div>
     </div>
 
-    <div class="field">
-      <label>제목 (Title)</label>
-      <input type="text" id="srcTitle" placeholder="알림 제목을 입력하세요">
-      <div class="charcount" id="titleCount">0자</div>
-    </div>
-    <div class="field">
-      <label>내용 (Body)</label>
-      <textarea id="srcBody" placeholder="알림 본문을 입력하세요"></textarea>
-      <div class="charcount" id="bodyCount">0자</div>
+    <!-- three language inputs (primary, manual) -->
+    <div id="composer"></div>
+
+    <div class="toolbar">
+      <button class="btn-ghost" id="clearBtn">전체 지우기</button>
     </div>
 
-    <button class="btn btn-primary" id="translateBtn">한 · 日 · EN 번역하기</button>
-
-    <div class="note">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#8b90a0" stroke-width="1.3"/><path d="M8 7v4M8 5h.01" stroke="#8b90a0" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <span>입력한 문구는 무료 번역 서비스(MyMemory)로 전송되어 번역됩니다. 결과는 카드에서 직접 수정할 수 있습니다.</span>
-    </div>
-
-    <details class="settings">
-      <summary>고급 설정</summary>
+    <!-- optional free auto-translate helper -->
+    <details class="helper">
+      <summary>⚡ 자동 번역 도우미 (참고용 초안)</summary>
       <div class="field">
-        <label>번역 API 이메일 (선택 · 일일 할당량 증가)</label>
-        <input type="text" id="apiEmail" placeholder="your@email.com">
+        <label>원문 언어를 고르고, 작성된 내용을 나머지 언어로 자동 채웁니다 (무료 엔진 · 품질은 참고용)</label>
+        <div class="row">
+          <select id="srcLang" style="flex:none; width:130px">
+            <option value="ko">한국어 기준</option>
+            <option value="ja">日本語 기준</option>
+            <option value="en">English 기준</option>
+          </select>
+          <button class="btn-ghost" id="autoBtn" style="flex:1">나머지 언어 자동 채우기</button>
+        </div>
+      </div>
+      <div class="note">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#8b90a0" stroke-width="1.3"/><path d="M8 7v4M8 5h.01" stroke="#8b90a0" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>자동 번역은 무료 서비스(MyMemory)로 전송되며 품질이 완벽하지 않습니다. 초안만 받고 각 카드에서 직접 다듬어 사용하세요.</span>
       </div>
     </details>
-
-    <!-- results -->
-    <div class="results" id="results" style="margin-top:18px"></div>
   </section>
 
   <!-- ===== Preview ===== -->
-  <section class="panel">
+  <section class="panel preview">
     <div class="panel-title">미리보기</div>
-
     <div class="tabs" id="deviceTabs">
       <button class="tab active" data-device="ios-lock">iPhone 잠금화면</button>
       <button class="tab" data-device="ios-banner">iPhone 배너</button>
@@ -294,7 +236,6 @@
       <button class="tab" data-lang="ja">🇯🇵 日本語</button>
       <button class="tab" data-lang="en">🇺🇸 English</button>
     </div>
-
     <div class="stage" id="stage"></div>
   </section>
 
@@ -302,9 +243,9 @@
 
 <script>
 /* ============================================================
-   푸시 알림 번역 & 기종별 미리보기
-   - 무료 번역 API(MyMemory, 키 불필요)로 한/일/영 번역
-   - iPhone 잠금화면 / iPhone 배너 / Android 미리보기
+   푸시 알림 작성 & 기종별 미리보기 (수동 작성 중심)
+   - 한/일/영 직접 작성 → iPhone 잠금/배너, Android 미리보기
+   - 선택: 무료 엔진(MyMemory)으로 참고용 초안 자동 채우기
    ============================================================ */
 const $ = id => document.getElementById(id);
 
@@ -314,108 +255,60 @@ const LANG_INFO = {
   ja: { name: '日本語', flag: '🇯🇵', now: '今' },
   en: { name: 'English', flag: '🇺🇸', now: 'now' },
 };
+// rough display limits (참고용)
+const LIMIT = { title: 50, body: 110 };
 
-// translation state: { ko:{title,body}, ja:{...}, en:{...} }
 let tr = { ko: { title: '', body: '' }, ja: { title: '', body: '' }, en: { title: '', body: '' } };
 let curDevice = 'ios-lock';
 let curLang = 'ko';
 
 // ---------- persistence ----------
-const STORE = 'pushPreviewApp.v1';
+const STORE = 'pushPreviewApp.v2';
 function save() {
   localStorage.setItem(STORE, JSON.stringify({
-    appIcon: $('appIcon').value, appName: $('appName').value,
-    srcLang: $('srcLang').value, srcTitle: $('srcTitle').value, srcBody: $('srcBody').value,
-    apiEmail: $('apiEmail').value, tr,
+    appIcon: $('appIcon').value, appName: $('appName').value, srcLang: $('srcLang').value, tr,
   }));
 }
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem(STORE));
-    if (!d) return;
+    const d = JSON.parse(localStorage.getItem(STORE)); if (!d) return;
     $('appIcon').value = d.appIcon ?? '🔔';
     $('appName').value = d.appName ?? 'FANCS';
-    $('srcLang').value = d.srcLang ?? 'ko';
-    $('srcTitle').value = d.srcTitle ?? '';
-    $('srcBody').value = d.srcBody ?? '';
-    $('apiEmail').value = d.apiEmail ?? '';
+    if (d.srcLang) $('srcLang').value = d.srcLang;
     if (d.tr) tr = d.tr;
   } catch (e) {}
 }
 
-// ---------- translation ----------
-async function translateText(text, from, to) {
-  if (!text.trim() || from === to) return text;
-  const email = $('apiEmail').value.trim();
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}` +
-    (email ? `&de=${encodeURIComponent(email)}` : '');
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('번역 요청 실패');
-  const data = await res.json();
-  if (data.responseStatus && data.responseStatus !== 200 && !data.responseData?.translatedText) {
-    throw new Error(data.responseDetails || '번역 실패');
-  }
-  return data.responseData.translatedText || text;
-}
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-async function doTranslate() {
-  const from = $('srcLang').value;
-  const title = $('srcTitle').value.trim();
-  const body = $('srcBody').value.trim();
-  if (!title && !body) { alert('제목 또는 내용을 입력해 주세요.'); return; }
-
-  const btn = $('translateBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span>번역 중…';
-
-  // source language keeps original text
-  tr[from] = { title, body };
-  const targets = LANGS.filter(l => l !== from);
-
-  try {
-    for (const t of targets) {
-      const [tt, tb] = await Promise.all([
-        translateText(title, from, t),
-        translateText(body, from, t),
-      ]);
-      tr[t] = { title: tt, body: tb };
-    }
-    renderResults();
-    renderPreview();
-    save();
-  } catch (e) {
-    alert('번역 중 오류가 발생했습니다: ' + e.message + '\n결과 카드에서 직접 입력/수정할 수 있습니다.');
-    renderResults();
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '한 · 日 · EN 번역하기';
-  }
-}
-
-// ---------- render translation result cards ----------
-function renderResults() {
-  const wrap = $('results');
-  if (LANGS.every(l => !tr[l].title && !tr[l].body)) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = LANGS.map(l => {
+// ---------- composer (manual language cards) ----------
+function buildComposer() {
+  $('composer').innerHTML = LANGS.map(l => {
     const info = LANG_INFO[l];
     return `
-    <div class="lang-card" data-lang="${l}">
+    <div class="lang-card">
       <div class="lc-head">
         <span class="lc-flag">${info.flag} ${info.name} <span class="badge">${l.toUpperCase()}</span></span>
-        <button class="copy-btn" data-copy="${l}">복사</button>
+        <div class="lc-actions">
+          <button class="mini-btn" data-copy="${l}">복사</button>
+        </div>
       </div>
-      <input type="text" class="lc-title-in" data-edit-title="${l}" value="${esc(tr[l].title)}" placeholder="제목">
-      <textarea class="lc-body-in" data-edit-body="${l}" placeholder="내용" style="margin-top:8px">${esc(tr[l].body)}</textarea>
+      <input type="text" data-edit="${l}|title" placeholder="제목" value="${esc(tr[l].title)}">
+      <div class="charcount" data-cc="${l}|title"></div>
+      <textarea data-edit="${l}|body" placeholder="내용" style="margin-top:4px">${esc(tr[l].body)}</textarea>
+      <div class="charcount" data-cc="${l}|body"></div>
     </div>`;
   }).join('');
 
-  wrap.querySelectorAll('[data-edit-title]').forEach(el => {
-    el.addEventListener('input', e => { tr[e.target.dataset.editTitle].title = e.target.value; renderPreview(); save(); });
+  $('composer').querySelectorAll('[data-edit]').forEach(el => {
+    el.addEventListener('input', e => {
+      const [l, field] = e.target.dataset.edit.split('|');
+      tr[l][field] = e.target.value;
+      updateCount(l, field);
+      renderPreview(); save();
+    });
   });
-  wrap.querySelectorAll('[data-edit-body]').forEach(el => {
-    el.addEventListener('input', e => { tr[e.target.dataset.editBody].body = e.target.value; renderPreview(); save(); });
-  });
-  wrap.querySelectorAll('[data-copy]').forEach(el => {
+  $('composer').querySelectorAll('[data-copy]').forEach(el => {
     el.addEventListener('click', () => {
       const l = el.dataset.copy;
       const text = `${tr[l].title}\n${tr[l].body}`.trim();
@@ -425,10 +318,57 @@ function renderResults() {
       });
     });
   });
+  LANGS.forEach(l => { updateCount(l, 'title'); updateCount(l, 'body'); });
 }
-function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-// ---------- render preview ----------
+function updateCount(l, field) {
+  const el = $('composer').querySelector(`[data-cc="${l}|${field}"]`);
+  if (!el) return;
+  const len = (tr[l][field] || '').length;
+  const lim = LIMIT[field];
+  el.textContent = `${len}자${len > lim ? ` · 권장 ${lim}자 초과` : ''}`;
+  el.classList.toggle('warn', len > lim);
+}
+
+function setFieldValue(l, field, val) {
+  tr[l][field] = val;
+  const el = $('composer').querySelector(`[data-edit="${l}|${field}"]`);
+  if (el) el.value = val;
+  updateCount(l, field);
+}
+
+// ---------- optional auto-translate (참고용) ----------
+async function translateText(text, from, to) {
+  if (!text.trim() || from === to) return text;
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('요청 실패');
+  const data = await res.json();
+  return data.responseData?.translatedText || text;
+}
+async function autoFill() {
+  const from = $('srcLang').value;
+  const title = (tr[from].title || '').trim();
+  const body = (tr[from].body || '').trim();
+  if (!title && !body) { alert(`${LANG_INFO[from].name} 칸에 먼저 내용을 작성해 주세요.`); return; }
+
+  const btn = $('autoBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>번역 중…';
+  try {
+    for (const t of LANGS.filter(l => l !== from)) {
+      const [tt, tb] = await Promise.all([translateText(title, from, t), translateText(body, from, t)]);
+      if (title) setFieldValue(t, 'title', tt);
+      if (body) setFieldValue(t, 'body', tb);
+    }
+    renderPreview(); save();
+  } catch (e) {
+    alert('자동 번역 실패: ' + e.message + '\n직접 입력해 주세요.');
+  } finally {
+    btn.disabled = false; btn.textContent = '나머지 언어 자동 채우기';
+  }
+}
+
+// ---------- preview ----------
 function nowTime() {
   const d = new Date();
   return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
@@ -439,40 +379,30 @@ function dateLabel(lang) {
   if (lang === 'ja') return `${d.getMonth() + 1}月${d.getDate()}日 ${['日','月','火','水','木','金','土'][d.getDay()]}曜日`;
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 }
-
 function renderPreview() {
   const stage = $('stage');
   const icon = $('appIcon').value || '🔔';
   const app = $('appName').value || 'App';
   const data = tr[curLang] || { title: '', body: '' };
   const info = LANG_INFO[curLang];
-
   const titleHtml = esc(data.title) || '<span style="opacity:.5">알림 제목</span>';
   const bodyHtml = esc(data.body) || '<span style="opacity:.5">알림 본문이 여기에 표시됩니다</span>';
 
   if (curDevice === 'android') {
     stage.innerHTML = `
-      <div class="phone">
-        <div class="screen android">
-          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
-          <div class="notif-area" style="margin-top:30px">
-            <div class="notif-android">
-              <div class="ahead">
-                <span class="aicon">${esc(icon)}</span>
-                <span class="aapp">${esc(app)}</span>
-                <span class="adot">·</span>
-                <span>${info.now}</span>
-              </div>
-              <div class="atitle">${titleHtml}</div>
-              <div class="abody">${bodyHtml}</div>
-            </div>
+      <div class="phone"><div class="screen android">
+        <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+        <div class="notif-area" style="margin-top:30px">
+          <div class="notif-android">
+            <div class="ahead"><span class="aicon">${esc(icon)}</span><span class="aapp">${esc(app)}</span><span class="adot">·</span><span>${info.now}</span></div>
+            <div class="atitle">${titleHtml}</div>
+            <div class="abody">${bodyHtml}</div>
           </div>
         </div>
-      </div>`;
+      </div></div>`;
     return;
   }
 
-  // iOS variants
   const notif = `
     <div class="notif-ios ${curDevice === 'ios-banner' ? 'notif-banner' : ''}">
       <div class="nicon">${esc(icon)}</div>
@@ -485,30 +415,21 @@ function renderPreview() {
 
   if (curDevice === 'ios-banner') {
     stage.innerHTML = `
-      <div class="phone">
-        <div class="ios-notch"></div>
-        <div class="screen ios">
-          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
-          <div class="notif-area top">${notif}</div>
-        </div>
-      </div>`;
-  } else { // ios-lock
+      <div class="phone"><div class="ios-notch"></div><div class="screen ios">
+        <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+        <div class="notif-area top">${notif}</div>
+      </div></div>`;
+  } else {
     stage.innerHTML = `
-      <div class="phone">
-        <div class="ios-notch"></div>
-        <div class="screen ios">
-          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
-          <div class="lock-clock">
-            <div class="date">${dateLabel(curLang)}</div>
-            <div class="time">${nowTime()}</div>
-          </div>
-          <div class="notif-area" style="margin-top:40px">${notif}</div>
-        </div>
-      </div>`;
+      <div class="phone"><div class="ios-notch"></div><div class="screen ios">
+        <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+        <div class="lock-clock"><div class="date">${dateLabel(curLang)}</div><div class="time">${nowTime()}</div></div>
+        <div class="notif-area" style="margin-top:40px">${notif}</div>
+      </div></div>`;
   }
 }
 
-// ---------- tab handlers ----------
+// ---------- tabs & misc ----------
 $('deviceTabs').addEventListener('click', e => {
   const t = e.target.closest('.tab'); if (!t) return;
   curDevice = t.dataset.device;
@@ -521,21 +442,18 @@ $('langTabs').addEventListener('click', e => {
   $('langTabs').querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
   renderPreview();
 });
-
-// ---------- live updates ----------
-$('translateBtn').addEventListener('click', doTranslate);
+$('autoBtn').addEventListener('click', autoFill);
+$('clearBtn').addEventListener('click', () => {
+  if (!confirm('작성한 한·일·영 문구를 모두 지울까요?')) return;
+  tr = { ko: { title: '', body: '' }, ja: { title: '', body: '' }, en: { title: '', body: '' } };
+  buildComposer(); renderPreview(); save();
+});
 ['appIcon', 'appName'].forEach(id => $(id).addEventListener('input', () => { renderPreview(); save(); }));
-$('srcTitle').addEventListener('input', () => { $('titleCount').textContent = $('srcTitle').value.length + '자'; save(); });
-$('srcBody').addEventListener('input', () => { $('bodyCount').textContent = $('srcBody').value.length + '자'; save(); });
-['srcLang', 'apiEmail'].forEach(id => $(id).addEventListener('change', save));
+$('srcLang').addEventListener('change', save);
 
 // ---------- boot ----------
 load();
-$('titleCount').textContent = $('srcTitle').value.length + '자';
-$('bodyCount').textContent = $('srcBody').value.length + '자';
-curLang = $('srcLang').value;
-$('langTabs').querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.lang === curLang));
-renderResults();
+buildComposer();
 renderPreview();
 </script>
 </body>
