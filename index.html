@@ -2,1129 +2,541 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0e0f13">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<title>표적 작전 — 3D FPS</title>
+<title>푸시 알림 번역 & 미리보기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0e0f13;
-    --accent: #c8f060;
-    --accent2: #60b4f0;
-    --red: #f06060;
-    --yellow: #f0c060;
+    --surface: #16181f;
+    --surface2: #1e2029;
+    --border: #2a2d38;
+    --accent: #60b4f0;
+    --accent2: #c8f060;
+    --accent3: #f060b4;
     --text: #e8eaf0;
     --muted: #8b90a0;
+    --red: #f06060;
+    --green: #60f0a0;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
-    touch-action: none; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--bg); color: var(--text); }
   body {
-    font-family: 'Segoe UI', 'Noto Sans KR', system-ui, sans-serif;
-    color: var(--text);
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  canvas { display: block; }
-
-  /* ===== HUD ===== */
-  #hud {
-    position: fixed; inset: 0; pointer-events: none; z-index: 10;
-  }
-  /* crosshair */
-  #crosshair {
-    position: absolute; top: 50%; left: 50%;
-    width: 26px; height: 26px;
-    transform: translate(-50%, -50%);
-    transition: transform .08s ease;
-  }
-  #crosshair::before, #crosshair::after {
-    content: ''; position: absolute; background: var(--accent);
-    box-shadow: 0 0 4px rgba(200,240,96,.8);
-  }
-  #crosshair::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
-  #crosshair::after  { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); }
-  #crosshair .dot {
-    position: absolute; top: 50%; left: 50%; width: 4px; height: 4px;
-    background: var(--accent); border-radius: 50%; transform: translate(-50%,-50%);
-  }
-  #crosshair.shoot { transform: translate(-50%,-50%) scale(1.6); }
-
-  /* top stats */
-  .stat-bar {
-    position: absolute; top: 22px; display: flex; flex-direction: column; gap: 6px;
-  }
-  #leftStats { left: 28px; }
-  #rightStats { right: 28px; text-align: right; align-items: flex-end; }
-  .stat-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
-  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
-  #scoreVal { color: var(--accent); }
-  #waveVal { color: var(--accent2); }
-
-  /* health & ammo bottom */
-  #bottomBar {
-    position: absolute; bottom: 26px; left: 0; right: 0;
-    display: flex; justify-content: space-between; align-items: flex-end;
-    padding: 0 32px;
-  }
-  #healthWrap { width: 240px; }
-  #healthLabel { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
-  #healthBarBg {
-    height: 14px; background: #1e2029; border: 1px solid #2a2d38; border-radius: 8px; overflow: hidden;
-  }
-  #healthBar {
-    height: 100%; width: 100%;
-    background: linear-gradient(90deg, #60f0a0, #c8f060);
-    transition: width .2s ease, background .3s ease;
-  }
-  #ammoWrap { text-align: right; }
-  #ammoLabel { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-bottom: 4px; }
-  #ammoVal { font-size: 38px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  #ammoVal .mag { color: var(--muted); font-size: 22px; }
-  #reloadHint { font-size: 12px; color: var(--yellow); height: 16px; margin-top: 2px; }
-
-  /* hit marker */
-  #hitMarker {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.6);
-    width: 30px; height: 30px; opacity: 0; transition: opacity .12s, transform .12s;
-  }
-  #hitMarker::before, #hitMarker::after {
-    content: ''; position: absolute; top: 50%; left: 50%; width: 12px; height: 3px; background: #fff;
-  }
-  #hitMarker::before { transform: translate(-50%,-50%) rotate(45deg); }
-  #hitMarker::after  { transform: translate(-50%,-50%) rotate(-45deg); }
-  #hitMarker.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-
-  /* damage vignette */
-  #damageVignette {
-    position: absolute; inset: 0; pointer-events: none; opacity: 0;
-    box-shadow: inset 0 0 160px 40px rgba(240,60,60,.8);
-    transition: opacity .35s ease;
+    font-family: 'Noto Sans KR', 'Noto Sans JP', system-ui, sans-serif;
+    min-height: 100vh; -webkit-tap-highlight-color: transparent;
   }
 
-  /* ===== Overlays ===== */
-  .overlay {
-    position: fixed; inset: 0; z-index: 20;
-    background: radial-gradient(circle at 50% 40%, rgba(20,22,30,.86), rgba(8,9,13,.97));
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    text-align: center; padding: 24px;
-    backdrop-filter: blur(4px);
+  /* ===== Header ===== */
+  header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(180deg, rgba(96,180,240,.06), transparent);
+    position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);
+    background-color: rgba(14,15,19,.85);
   }
-  .overlay.hidden { display: none; }
-  .title {
-    font-size: 64px; font-weight: 800; letter-spacing: 4px; line-height: 1;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-    margin-bottom: 10px;
+  header .logo {
+    width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
   }
-  .subtitle { color: var(--muted); font-size: 16px; letter-spacing: 3px; margin-bottom: 36px; }
+  header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+  header p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== Layout ===== */
+  .wrap {
+    max-width: 1240px; margin: 0 auto; padding: 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 920px) { .wrap { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+  }
+  .panel-title {
+    font-size: 12px; letter-spacing: 2px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 16px; font-weight: 600;
+  }
+
+  /* ===== Form ===== */
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 500;
+  }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  input[type=text], textarea, select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); padding: 11px 13px;
+    font-family: inherit; font-size: 14px; transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; line-height: 1.5; }
+  select { cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%238b90a0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+  }
+  .icon-input { max-width: 70px; text-align: center; font-size: 20px; flex: none !important; width: 70px; }
+
   .btn {
-    pointer-events: auto; cursor: pointer;
-    background: var(--accent); color: #0e0f13; border: none;
-    font-size: 18px; font-weight: 700; letter-spacing: 1px;
-    padding: 16px 48px; border-radius: 12px;
-    transition: transform .12s ease, box-shadow .12s ease;
-    box-shadow: 0 8px 30px rgba(200,240,96,.3);
+    cursor: pointer; border: none; border-radius: 10px;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 12px 18px; transition: transform .1s, box-shadow .1s, background .15s;
   }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200,240,96,.45); }
-  .btn:active { transform: translateY(0); }
-  .controls {
-    margin-top: 40px; display: grid; grid-template-columns: auto auto;
-    gap: 10px 28px; font-size: 14px; color: var(--muted);
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--accent); color: #0a0d12; width: 100%;
+    box-shadow: 0 6px 20px rgba(96,180,240,.25);
   }
-  .controls b { color: var(--text); font-weight: 600; }
-  .controls .key {
-    display: inline-block; background: #1e2029; border: 1px solid #2a2d38;
-    border-radius: 6px; padding: 2px 10px; color: var(--accent); font-family: monospace;
+  .btn-primary:hover { box-shadow: 0 8px 28px rgba(96,180,240,.4); }
+  .btn-primary:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+  .btn-ghost {
+    background: var(--surface2); color: var(--muted); border: 1px solid var(--border);
+    padding: 8px 14px; font-size: 13px;
   }
-  #finalScore { font-size: 22px; color: var(--accent); margin-bottom: 8px; }
-  #finalWave { font-size: 15px; color: var(--muted); margin-bottom: 32px; }
-  #pauseHint { position: absolute; bottom: 28px; font-size: 13px; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
 
-  /* loading */
-  #loading {
-    position: fixed; inset: 0; z-index: 30; background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--muted); font-size: 14px; letter-spacing: 3px;
+  .note {
+    font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5;
+    display: flex; gap: 6px; align-items: flex-start;
   }
-  /* wave announce */
-  #waveAnnounce {
-    position: fixed; top: 32%; left: 50%; transform: translateX(-50%);
-    z-index: 15; text-align: center; pointer-events: none; opacity: 0;
-    transition: opacity .4s ease;
-  }
-  #waveAnnounce.show { opacity: 1; }
-  #waveAnnounce .big { font-size: 52px; font-weight: 800; color: var(--accent2); letter-spacing: 4px; }
-  #waveAnnounce .small { font-size: 16px; color: var(--muted); letter-spacing: 2px; }
+  .note svg { flex-shrink: 0; margin-top: 1px; }
 
-  /* ===== Touch controls (mobile) ===== */
-  #touchControls { display: none; }            /* shown only on touch devices */
-  body.touch #touchControls { display: block; }
+  /* translation result cards */
+  .results { margin-top: 8px; }
+  .lang-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .lang-card .lc-head {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .lang-card .lc-flag { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .lang-card .lc-flag .badge {
+    font-size: 10px; background: var(--bg); color: var(--accent2);
+    padding: 2px 7px; border-radius: 6px; letter-spacing: 1px;
+  }
+  .lang-card .lc-title { font-weight: 500; margin-bottom: 8px; font-size: 13.5px; }
+  .lang-card .lc-body { font-size: 13.5px; }
+  .copy-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 7px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+    font-family: inherit; transition: all .15s;
+  }
+  .copy-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+  .copy-btn.done { color: var(--green); border-color: var(--green); }
 
-  /* virtual joystick */
-  #joystick {
-    position: absolute; z-index: 12; width: 130px; height: 130px;
-    border-radius: 50%; border: 2px solid rgba(200,240,96,.35);
-    background: rgba(20,22,30,.35); pointer-events: none;
-    transform: translate(-50%, -50%); opacity: 0; transition: opacity .15s ease;
+  /* ===== Preview ===== */
+  .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 9px; padding: 8px 14px; font-size: 13px; cursor: pointer;
+    font-family: inherit; transition: all .15s;
   }
-  #joystick.active { opacity: 1; }
-  #joystickKnob {
-    position: absolute; top: 50%; left: 50%; width: 56px; height: 56px;
-    margin: -28px 0 0 -28px; border-radius: 50%;
-    background: rgba(200,240,96,.55); box-shadow: 0 0 16px rgba(200,240,96,.5);
-  }
+  .tab.active { background: var(--accent); color: #0a0d12; border-color: var(--accent); font-weight: 600; }
+  .tab-sub { display: flex; gap: 6px; margin-bottom: 20px; }
+  .tab-sub .tab { padding: 6px 14px; font-size: 12px; border-radius: 20px; }
 
-  /* action buttons */
-  .tbtn {
-    position: absolute; z-index: 12; pointer-events: auto;
-    border-radius: 50%; border: 2px solid rgba(255,255,255,.18);
-    background: rgba(30,32,41,.55); color: var(--text);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; -webkit-user-select: none; user-select: none;
-    backdrop-filter: blur(2px); transition: transform .08s, background .1s;
-  }
-  .tbtn:active, .tbtn.pressed { transform: scale(.92); background: rgba(200,240,96,.3); }
-  #btnFire {
-    right: 28px; bottom: 130px; width: 110px; height: 110px;
-    font-size: 13px; letter-spacing: 1px;
-    border-color: rgba(240,96,96,.5); background: rgba(240,96,96,.22);
-  }
-  #btnFire:active, #btnFire.pressed { background: rgba(240,96,96,.45); }
-  #btnReload { right: 150px; bottom: 150px; width: 64px; height: 64px; font-size: 22px; }
-  #btnJump   { right: 56px;  bottom: 250px; width: 64px; height: 64px; font-size: 22px; }
-  #btnRun    { left: 24px;   bottom: 200px; width: 64px; height: 64px; font-size: 11px; letter-spacing: 1px; }
-  #btnRun.on { background: rgba(96,180,240,.45); border-color: rgba(96,180,240,.6); }
-  #btnPause  { top: 22px; left: 50%; transform: translateX(-50%); width: 44px; height: 44px; font-size: 18px; }
-  #btnPause:active { transform: translateX(-50%) scale(.92); }
+  .stage { display: flex; justify-content: center; padding: 10px 0; }
 
-  /* responsive HUD for small screens */
-  @media (max-width: 760px), (pointer: coarse) {
-    .stat-value { font-size: 22px; }
-    #leftStats { left: 14px; top: 14px; }
-    #rightStats { right: 64px; top: 14px; }
-    #bottomBar { padding: 0 16px; bottom: 16px; }
-    #healthWrap { width: 150px; }
-    #ammoVal { font-size: 26px; }
-    #ammoVal .mag { font-size: 15px; }
-    .title { font-size: 40px; letter-spacing: 2px; }
-    .subtitle { font-size: 13px; margin-bottom: 26px; }
-    #waveAnnounce .big { font-size: 34px; }
-    .controls { grid-template-columns: auto auto; gap: 8px 18px; font-size: 12px; }
-    .btn { padding: 14px 36px; font-size: 16px; }
+  /* phone frame */
+  .phone {
+    width: 300px; border-radius: 42px; padding: 12px;
+    background: #050608; box-shadow: 0 30px 60px rgba(0,0,0,.5), inset 0 0 0 2px #2a2d38;
+    position: relative;
   }
+  .screen {
+    border-radius: 32px; overflow: hidden; position: relative; height: 540px;
+    background-size: cover; background-position: center;
+  }
+  .screen.ios { background: linear-gradient(165deg, #2a3a5a 0%, #1a2238 40%, #3a2a4a 100%); }
+  .screen.android { background: linear-gradient(165deg, #16322a 0%, #1a2430 50%, #2a1a30 100%); }
+  /* status bar */
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 22px 6px; font-size: 13px; font-weight: 600; color: #fff;
+  }
+  .ios-notch {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 110px; height: 26px; background: #050608; border-radius: 16px; z-index: 5;
+  }
+  /* clock big (ios lock) */
+  .lock-clock { text-align: center; color: #fff; margin-top: 14px; }
+  .lock-clock .date { font-size: 14px; opacity: .9; font-weight: 500; }
+  .lock-clock .time { font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -1px; }
+
+  .notif-area { padding: 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+  .notif-area.top { position: absolute; top: 46px; left: 0; right: 0; }
+
+  /* iOS notification */
+  .notif-ios {
+    background: rgba(245,245,247,.82); backdrop-filter: blur(20px);
+    border-radius: 18px; padding: 11px 13px; display: flex; gap: 10px;
+    color: #1a1a1a; box-shadow: 0 4px 20px rgba(0,0,0,.18);
+    animation: slidein .4s ease;
+  }
+  .notif-ios .nicon { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3)); }
+  .notif-ios .ncontent { flex: 1; min-width: 0; }
+  .notif-ios .nhead { display: flex; justify-content: space-between; font-size: 11px; color: #6a6a6e; margin-bottom: 1px; }
+  .notif-ios .napp { font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+  .notif-ios .ntitle { font-weight: 600; font-size: 14px; line-height: 1.3; word-break: break-word; }
+  .notif-ios .nbody { font-size: 13.5px; line-height: 1.35; margin-top: 1px; word-break: break-word; }
+
+  /* iOS banner (top) */
+  .notif-banner { box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+
+  /* Android notification */
+  .notif-android {
+    background: #1f1f23; border-radius: 24px; padding: 13px 15px; color: #e3e3e6;
+    box-shadow: 0 4px 18px rgba(0,0,0,.3); animation: slidein .4s ease;
+  }
+  .notif-android .ahead { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #b0b0b8; margin-bottom: 6px; }
+  .notif-android .aicon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3)); }
+  .notif-android .aapp { font-weight: 500; }
+  .notif-android .adot { color: #707078; }
+  .notif-android .atitle { font-weight: 600; font-size: 14px; line-height: 1.3; word-break: break-word; }
+  .notif-android .abody { font-size: 13.5px; line-height: 1.4; margin-top: 2px; color: #c8c8d0; word-break: break-word; }
+
+  @keyframes slidein { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .empty-hint { color: var(--muted); font-size: 13px; text-align: center; padding: 40px 0; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(10,13,18,.3);
+    border-top-color: #0a0d12; border-radius: 50%; animation: rot .6s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes rot { to { transform: rotate(360deg); } }
+
+  details.settings { margin-top: 14px; }
+  details.settings summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+  details.settings .field { margin-top: 12px; margin-bottom: 0; }
+  .charcount { font-size: 11px; color: var(--muted); text-align: right; margin-top: 4px; }
 </style>
 </head>
 <body>
 
-<div id="loading">로딩 중…</div>
-
-<!-- HUD -->
-<div id="hud" style="display:none">
-  <div id="crosshair"><span class="dot"></span></div>
-  <div id="hitMarker"></div>
-  <div id="damageVignette"></div>
-
-  <div id="leftStats" class="stat-bar">
-    <div class="stat-label">점수</div>
-    <div id="scoreVal" class="stat-value">0</div>
+<header>
+  <div class="logo">🔔</div>
+  <div>
+    <h1>푸시 알림 번역 &amp; 미리보기</h1>
+    <p>한 · 日 · EN 자동 번역 후 기종별로 미리 확인하세요</p>
   </div>
-  <div id="rightStats" class="stat-bar">
-    <div class="stat-label">웨이브</div>
-    <div id="waveVal" class="stat-value">1</div>
-    <div class="stat-label" style="margin-top:8px">남은 적</div>
-    <div id="enemyVal" class="stat-value" style="font-size:22px;color:var(--red)">0</div>
-  </div>
+</header>
 
-  <div id="bottomBar">
-    <div id="healthWrap">
-      <div id="healthLabel">체력</div>
-      <div id="healthBarBg"><div id="healthBar"></div></div>
+<div class="wrap">
+
+  <!-- ===== Composer ===== -->
+  <section class="panel">
+    <div class="panel-title">알림 작성</div>
+
+    <div class="row">
+      <div class="field" style="flex:none">
+        <label>앱 아이콘</label>
+        <input type="text" id="appIcon" class="icon-input" value="🔔" maxlength="2">
+      </div>
+      <div class="field">
+        <label>앱 이름</label>
+        <input type="text" id="appName" placeholder="예: FANCS" value="FANCS">
+      </div>
+      <div class="field" style="flex:none; width:130px">
+        <label>원문 언어</label>
+        <select id="srcLang">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
     </div>
-    <div id="ammoWrap">
-      <div id="ammoLabel">탄약</div>
-      <div id="ammoVal">30<span class="mag"> / 30</span></div>
-      <div id="reloadHint"></div>
+
+    <div class="field">
+      <label>제목 (Title)</label>
+      <input type="text" id="srcTitle" placeholder="알림 제목을 입력하세요">
+      <div class="charcount" id="titleCount">0자</div>
     </div>
-  </div>
+    <div class="field">
+      <label>내용 (Body)</label>
+      <textarea id="srcBody" placeholder="알림 본문을 입력하세요"></textarea>
+      <div class="charcount" id="bodyCount">0자</div>
+    </div>
 
-  <!-- Touch controls (mobile only) -->
-  <div id="touchControls">
-    <div id="joystick"><div id="joystickKnob"></div></div>
-    <div id="btnFire" class="tbtn">발사</div>
-    <div id="btnReload" class="tbtn" aria-label="재장전">⟳</div>
-    <div id="btnJump" class="tbtn" aria-label="점프">⤒</div>
-    <div id="btnRun" class="tbtn">달리기</div>
-    <div id="btnPause" class="tbtn" aria-label="일시정지">❚❚</div>
-  </div>
+    <button class="btn btn-primary" id="translateBtn">한 · 日 · EN 번역하기</button>
+
+    <div class="note">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#8b90a0" stroke-width="1.3"/><path d="M8 7v4M8 5h.01" stroke="#8b90a0" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <span>입력한 문구는 무료 번역 서비스(MyMemory)로 전송되어 번역됩니다. 결과는 카드에서 직접 수정할 수 있습니다.</span>
+    </div>
+
+    <details class="settings">
+      <summary>고급 설정</summary>
+      <div class="field">
+        <label>번역 API 이메일 (선택 · 일일 할당량 증가)</label>
+        <input type="text" id="apiEmail" placeholder="your@email.com">
+      </div>
+    </details>
+
+    <!-- results -->
+    <div class="results" id="results" style="margin-top:18px"></div>
+  </section>
+
+  <!-- ===== Preview ===== -->
+  <section class="panel">
+    <div class="panel-title">미리보기</div>
+
+    <div class="tabs" id="deviceTabs">
+      <button class="tab active" data-device="ios-lock">iPhone 잠금화면</button>
+      <button class="tab" data-device="ios-banner">iPhone 배너</button>
+      <button class="tab" data-device="android">Android</button>
+    </div>
+    <div class="tab-sub" id="langTabs">
+      <button class="tab active" data-lang="ko">🇰🇷 한국어</button>
+      <button class="tab" data-lang="ja">🇯🇵 日本語</button>
+      <button class="tab" data-lang="en">🇺🇸 English</button>
+    </div>
+
+    <div class="stage" id="stage"></div>
+  </section>
+
 </div>
 
-<div id="waveAnnounce"><div class="big"></div><div class="small"></div></div>
-
-<!-- Start overlay -->
-<div id="startScreen" class="overlay hidden">
-  <div class="title">표적 작전</div>
-  <div class="subtitle">T A R G E T &nbsp; O P S</div>
-  <button class="btn" id="startBtn">작전 개시 ▶</button>
-  <div class="controls">
-    <span><span class="key">W A S D</span></span><span><b>이동</b></span>
-    <span><span class="key">마우스</span></span><span><b>조준</b></span>
-    <span><span class="key">좌클릭</span></span><span><b>발사</b></span>
-    <span><span class="key">R</span></span><span><b>재장전</b></span>
-    <span><span class="key">Shift</span></span><span><b>달리기</b></span>
-    <span><span class="key">Space</span></span><span><b>점프</b></span>
-    <span><span class="key">ESC</span></span><span><b>일시정지</b></span>
-  </div>
-  <div id="pauseHint">화면을 클릭하면 마우스가 잠기고 시점 조작이 시작됩니다.</div>
-</div>
-
-<!-- Pause overlay -->
-<div id="pauseScreen" class="overlay hidden">
-  <div class="title" style="font-size:48px">일시정지</div>
-  <div class="subtitle">PAUSED</div>
-  <button class="btn" id="resumeBtn">계속하기</button>
-</div>
-
-<!-- Game over overlay -->
-<div id="gameOverScreen" class="overlay hidden">
-  <div class="title" style="font-size:52px;background:linear-gradient(90deg,#f06060,#f0c060);-webkit-background-clip:text;background-clip:text;color:transparent">작전 종료</div>
-  <div class="subtitle">MISSION FAILED</div>
-  <div id="finalScore">최종 점수: 0</div>
-  <div id="finalWave">도달 웨이브: 1</div>
-  <button class="btn" id="restartBtn">다시 도전 ↻</button>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-
+<script>
 /* ============================================================
-   표적 작전 (Target Ops) — 3D FPS
-   Three.js 기반 자체 완결형 브라우저 게임
+   푸시 알림 번역 & 기종별 미리보기
+   - 무료 번역 API(MyMemory, 키 불필요)로 한/일/영 번역
+   - iPhone 잠금화면 / iPhone 배너 / Android 미리보기
    ============================================================ */
-
-// ---------- DOM ----------
 const $ = id => document.getElementById(id);
-const hud = $('hud');
-const loadingEl = $('loading');
-const startScreen = $('startScreen');
-const pauseScreen = $('pauseScreen');
-const gameOverScreen = $('gameOverScreen');
-const crosshair = $('crosshair');
-const hitMarker = $('hitMarker');
-const damageVignette = $('damageVignette');
-const scoreVal = $('scoreVal');
-const waveVal = $('waveVal');
-const enemyVal = $('enemyVal');
-const healthBar = $('healthBar');
-const ammoVal = $('ammoVal');
-const reloadHint = $('reloadHint');
-const waveAnnounce = $('waveAnnounce');
 
-// ---------- Renderer / Scene / Camera ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-document.body.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0e0f13);
-scene.fog = new THREE.FogExp2(0x0e0f13, 0.018);
-
-const camera = new THREE.PerspectiveCamera(78, window.innerWidth / window.innerHeight, 0.1, 500);
-camera.position.set(0, 1.7, 0);
-
-// ---------- Lights ----------
-const hemi = new THREE.HemisphereLight(0x8090b0, 0x202028, 0.7);
-scene.add(hemi);
-const dir = new THREE.DirectionalLight(0xfff0d8, 1.1);
-dir.position.set(30, 50, 20);
-dir.castShadow = true;
-dir.shadow.mapSize.set(2048, 2048);
-dir.shadow.camera.left = -60; dir.shadow.camera.right = 60;
-dir.shadow.camera.top = 60; dir.shadow.camera.bottom = -60;
-dir.shadow.camera.near = 1; dir.shadow.camera.far = 150;
-scene.add(dir);
-
-// ---------- Arena ----------
-const ARENA = 60; // half-size (arena spans -ARENA..ARENA)
-const colliders = []; // {min:Vector3, max:Vector3} AABBs for obstacles
-
-function buildArena() {
-  // Floor
-  const floorGeo = new THREE.PlaneGeometry(ARENA * 2, ARENA * 2, 1, 1);
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x16181f, roughness: 0.95, metalness: 0.05 });
-  const floor = new THREE.Mesh(floorGeo, floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  floor.receiveShadow = true;
-  scene.add(floor);
-
-  // Grid accent
-  const grid = new THREE.GridHelper(ARENA * 2, 48, 0x2a2d38, 0x1e2029);
-  grid.position.y = 0.02;
-  scene.add(grid);
-
-  // Perimeter walls
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x1e2029, roughness: 0.8, metalness: 0.1 });
-  const wallH = 8, t = 2;
-  const wallDefs = [
-    [0, ARENA, ARENA * 2 + t, t],   // far (z+)
-    [0, -ARENA, ARENA * 2 + t, t],  // near (z-)
-    [ARENA, 0, t, ARENA * 2 + t],   // right (x+)
-    [-ARENA, 0, t, ARENA * 2 + t],  // left (x-)
-  ];
-  for (const [x, z, w, d] of wallDefs) {
-    const geo = new THREE.BoxGeometry(w, wallH, d);
-    const m = new THREE.Mesh(geo, wallMat);
-    m.position.set(x, wallH / 2, z);
-    m.castShadow = true; m.receiveShadow = true;
-    scene.add(m);
-    addCollider(m.position, w, wallH, d);
-  }
-
-  // Obstacle crates / pillars — randomized layout
-  const crateMat = new THREE.MeshStandardMaterial({ color: 0x60b4f0, roughness: 0.6, metalness: 0.2 });
-  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2a2d38, roughness: 0.7, metalness: 0.3 });
-  const rng = mulberry32(1337);
-  for (let i = 0; i < 26; i++) {
-    const isPillar = rng() > 0.55;
-    const x = (rng() - 0.5) * (ARENA * 1.7);
-    const z = (rng() - 0.5) * (ARENA * 1.7);
-    if (Math.hypot(x, z) < 8) continue; // keep spawn clear
-    if (isPillar) {
-      const h = 3 + rng() * 6;
-      const r = 0.6 + rng() * 0.8;
-      const geo = new THREE.CylinderGeometry(r, r, h, 8);
-      const m = new THREE.Mesh(geo, pillarMat);
-      m.position.set(x, h / 2, z);
-      m.castShadow = true; m.receiveShadow = true;
-      scene.add(m);
-      addCollider(m.position, r * 2, h, r * 2);
-    } else {
-      const s = 1.4 + rng() * 2.2;
-      const geo = new THREE.BoxGeometry(s, s, s);
-      const m = new THREE.Mesh(geo, crateMat.clone());
-      m.material.color.offsetHSL(0, 0, (rng() - 0.5) * 0.2);
-      m.position.set(x, s / 2, z);
-      m.rotation.y = rng() * Math.PI;
-      m.castShadow = true; m.receiveShadow = true;
-      scene.add(m);
-      addCollider(m.position, s * 1.2, s, s * 1.2); // approx (ignore rotation)
-    }
-  }
-}
-
-function addCollider(pos, w, h, d) {
-  colliders.push(new THREE.Box3(
-    new THREE.Vector3(pos.x - w / 2, pos.y - h / 2, pos.z - d / 2),
-    new THREE.Vector3(pos.x + w / 2, pos.y + h / 2, pos.z + d / 2)
-  ));
-}
-
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-buildArena();
-
-// ---------- Weapon viewmodel ----------
-const weapon = new THREE.Group();
-{
-  const bodyMat = new THREE.MeshStandardMaterial({ color: 0x20222b, roughness: 0.5, metalness: 0.6 });
-  const accentMat = new THREE.MeshStandardMaterial({ color: 0xc8f060, roughness: 0.4, metalness: 0.3, emissive: 0x3a4a10 });
-
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.7), bodyMat);
-  body.position.set(0, 0, -0.2);
-  weapon.add(body);
-
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.6, 12), bodyMat);
-  barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0, 0.02, -0.6);
-  weapon.add(barrel);
-
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.28, 0.14), bodyMat);
-  grip.position.set(0, -0.2, 0.05);
-  grip.rotation.x = 0.25;
-  weapon.add(grip);
-
-  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.06, 0.18), accentMat);
-  sight.position.set(0, 0.13, -0.15);
-  weapon.add(sight);
-
-  weapon.position.set(0.28, -0.26, -0.55);
-  camera.add(weapon);
-}
-// muzzle flash
-const muzzle = new THREE.PointLight(0xffd060, 0, 8, 2);
-muzzle.position.set(0, 0.04, -1.0);
-weapon.add(muzzle);
-const muzzleSprite = new THREE.Mesh(
-  new THREE.PlaneGeometry(0.4, 0.4),
-  new THREE.MeshBasicMaterial({ color: 0xffe080, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })
-);
-muzzleSprite.position.set(0, 0.02, -0.95);
-weapon.add(muzzleSprite);
-scene.add(camera);
-
-// ---------- Controls ----------
-const controls = new PointerLockControls(camera, renderer.domElement);
-scene.add(controls.getObject());
-controls.getObject().position.set(0, 1.7, 0);
-
-// ---------- Game state ----------
-const State = { MENU: 0, PLAYING: 1, PAUSED: 2, OVER: 3 };
-let state = State.MENU;
-
-const player = {
-  velY: 0, onGround: true,
-  health: 100, maxHealth: 100,
-  speed: 6.0, runMul: 1.7,
+const LANGS = ['ko', 'ja', 'en'];
+const LANG_INFO = {
+  ko: { name: '한국어', flag: '🇰🇷', now: '지금' },
+  ja: { name: '日本語', flag: '🇯🇵', now: '今' },
+  en: { name: 'English', flag: '🇺🇸', now: 'now' },
 };
-let score = 0;
-let wave = 0;
-let enemiesRemaining = 0;
 
-const weaponDef = { magSize: 30, fireRate: 0.09, reloadTime: 1.4, damage: 34, range: 200 };
-let ammo = weaponDef.magSize;
-let fireCooldown = 0;
-let reloading = false;
-let reloadTimer = 0;
+// translation state: { ko:{title,body}, ja:{...}, en:{...} }
+let tr = { ko: { title: '', body: '' }, ja: { title: '', body: '' }, en: { title: '', body: '' } };
+let curDevice = 'ios-lock';
+let curLang = 'ko';
 
-const keys = {};
-const move = { f: 0, b: 0, l: 0, r: 0 };
-
-// ---------- Enemies ----------
-const enemies = [];
-const enemyGeo = new THREE.CapsuleGeometry(0.5, 1.0, 4, 10);
-
-function spawnEnemy(hp, speed) {
-  // spawn at arena edge, away from player
-  let x, z, tries = 0;
-  const p = controls.getObject().position;
-  do {
-    const ang = Math.random() * Math.PI * 2;
-    const rad = ARENA * 0.7 + Math.random() * ARENA * 0.25;
-    x = Math.cos(ang) * rad; z = Math.sin(ang) * rad;
-    tries++;
-  } while (Math.hypot(x - p.x, z - p.z) < 20 && tries < 12);
-
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf06060, roughness: 0.5, metalness: 0.2, emissive: 0x300808 });
-  const mesh = new THREE.Mesh(enemyGeo, mat);
-  mesh.position.set(x, 1.0, z);
-  mesh.castShadow = true;
-  scene.add(mesh);
-
-  // glowing eye
-  const eye = new THREE.Mesh(
-    new THREE.SphereGeometry(0.12, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0xffff80 })
-  );
-  eye.position.set(0, 0.55, 0.45);
-  mesh.add(eye);
-
-  enemies.push({ mesh, hp, maxHp: hp, speed, hitFlash: 0, atkCooldown: 0 });
+// ---------- persistence ----------
+const STORE = 'pushPreviewApp.v1';
+function save() {
+  localStorage.setItem(STORE, JSON.stringify({
+    appIcon: $('appIcon').value, appName: $('appName').value,
+    srcLang: $('srcLang').value, srcTitle: $('srcTitle').value, srcBody: $('srcBody').value,
+    apiEmail: $('apiEmail').value, tr,
+  }));
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE));
+    if (!d) return;
+    $('appIcon').value = d.appIcon ?? '🔔';
+    $('appName').value = d.appName ?? 'FANCS';
+    $('srcLang').value = d.srcLang ?? 'ko';
+    $('srcTitle').value = d.srcTitle ?? '';
+    $('srcBody').value = d.srcBody ?? '';
+    $('apiEmail').value = d.apiEmail ?? '';
+    if (d.tr) tr = d.tr;
+  } catch (e) {}
 }
 
-// ---------- Waves ----------
-function startWave(n) {
-  wave = n;
-  waveVal.textContent = n;
-  const count = 3 + Math.floor(n * 1.8);
-  const hp = 60 + n * 18;
-  const speed = 2.2 + n * 0.28;
-  enemiesRemaining = count;
-  enemyVal.textContent = count;
-
-  // spawn gradually
-  let spawned = 0;
-  const spawnInterval = setInterval(() => {
-    if (state !== State.PLAYING) { clearInterval(spawnInterval); return; }
-    spawnEnemy(hp, Math.min(speed, 6.5));
-    spawned++;
-    if (spawned >= count) clearInterval(spawnInterval);
-  }, 650);
-
-  showWaveAnnounce(`웨이브 ${n}`, `적 ${count}기 접근 중`);
+// ---------- translation ----------
+async function translateText(text, from, to) {
+  if (!text.trim() || from === to) return text;
+  const email = $('apiEmail').value.trim();
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}` +
+    (email ? `&de=${encodeURIComponent(email)}` : '');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('번역 요청 실패');
+  const data = await res.json();
+  if (data.responseStatus && data.responseStatus !== 200 && !data.responseData?.translatedText) {
+    throw new Error(data.responseDetails || '번역 실패');
+  }
+  return data.responseData.translatedText || text;
 }
 
-function showWaveAnnounce(big, small) {
-  waveAnnounce.querySelector('.big').textContent = big;
-  waveAnnounce.querySelector('.small').textContent = small;
-  waveAnnounce.classList.add('show');
-  setTimeout(() => waveAnnounce.classList.remove('show'), 1800);
+async function doTranslate() {
+  const from = $('srcLang').value;
+  const title = $('srcTitle').value.trim();
+  const body = $('srcBody').value.trim();
+  if (!title && !body) { alert('제목 또는 내용을 입력해 주세요.'); return; }
+
+  const btn = $('translateBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>번역 중…';
+
+  // source language keeps original text
+  tr[from] = { title, body };
+  const targets = LANGS.filter(l => l !== from);
+
+  try {
+    for (const t of targets) {
+      const [tt, tb] = await Promise.all([
+        translateText(title, from, t),
+        translateText(body, from, t),
+      ]);
+      tr[t] = { title: tt, body: tb };
+    }
+    renderResults();
+    renderPreview();
+    save();
+  } catch (e) {
+    alert('번역 중 오류가 발생했습니다: ' + e.message + '\n결과 카드에서 직접 입력/수정할 수 있습니다.');
+    renderResults();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '한 · 日 · EN 번역하기';
+  }
 }
 
-// ---------- Audio (WebAudio synth, no assets) ----------
-let actx = null;
-function audio() {
-  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-  return actx;
-}
-function shootSound() {
-  const a = audio(); const t = a.currentTime;
-  const o = a.createOscillator(), g = a.createGain();
-  o.type = 'square'; o.frequency.setValueAtTime(220, t);
-  o.frequency.exponentialRampToValueAtTime(60, t + 0.08);
-  g.gain.setValueAtTime(0.18, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.11);
-  // noise burst
-  const buf = a.createBuffer(1, a.sampleRate * 0.06, a.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-  const src = a.createBufferSource(); src.buffer = buf;
-  const ng = a.createGain(); ng.gain.value = 0.12;
-  src.connect(ng); ng.connect(a.destination); src.start(t);
-}
-function tone(freq, dur, type = 'sine', vol = 0.15) {
-  const a = audio(); const t = a.currentTime;
-  const o = a.createOscillator(), g = a.createGain();
-  o.type = type; o.frequency.value = freq;
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur);
-}
-function hitSound() { tone(880, 0.07, 'square', 0.1); }
-function killSound() { tone(180, 0.18, 'sawtooth', 0.16); setTimeout(() => tone(120, 0.2, 'sawtooth', 0.14), 60); }
-function reloadSound() { tone(300, 0.05, 'square', 0.08); setTimeout(() => tone(500, 0.05, 'square', 0.08), 180); }
-function hurtSound() { tone(140, 0.15, 'sawtooth', 0.18); }
+// ---------- render translation result cards ----------
+function renderResults() {
+  const wrap = $('results');
+  if (LANGS.every(l => !tr[l].title && !tr[l].body)) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = LANGS.map(l => {
+    const info = LANG_INFO[l];
+    return `
+    <div class="lang-card" data-lang="${l}">
+      <div class="lc-head">
+        <span class="lc-flag">${info.flag} ${info.name} <span class="badge">${l.toUpperCase()}</span></span>
+        <button class="copy-btn" data-copy="${l}">복사</button>
+      </div>
+      <input type="text" class="lc-title-in" data-edit-title="${l}" value="${esc(tr[l].title)}" placeholder="제목">
+      <textarea class="lc-body-in" data-edit-body="${l}" placeholder="내용" style="margin-top:8px">${esc(tr[l].body)}</textarea>
+    </div>`;
+  }).join('');
 
-// ---------- Shooting ----------
-const raycaster = new THREE.Raycaster();
-const screenCenter = new THREE.Vector2(0, 0);
+  wrap.querySelectorAll('[data-edit-title]').forEach(el => {
+    el.addEventListener('input', e => { tr[e.target.dataset.editTitle].title = e.target.value; renderPreview(); save(); });
+  });
+  wrap.querySelectorAll('[data-edit-body]').forEach(el => {
+    el.addEventListener('input', e => { tr[e.target.dataset.editBody].body = e.target.value; renderPreview(); save(); });
+  });
+  wrap.querySelectorAll('[data-copy]').forEach(el => {
+    el.addEventListener('click', () => {
+      const l = el.dataset.copy;
+      const text = `${tr[l].title}\n${tr[l].body}`.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        el.textContent = '복사됨 ✓'; el.classList.add('done');
+        setTimeout(() => { el.textContent = '복사'; el.classList.remove('done'); }, 1400);
+      });
+    });
+  });
+}
+function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-function shoot() {
-  if (reloading || ammo <= 0 || fireCooldown > 0) {
-    if (ammo <= 0 && !reloading) startReload();
+// ---------- render preview ----------
+function nowTime() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+}
+function dateLabel(lang) {
+  const d = new Date();
+  if (lang === 'ko') return `${d.getMonth() + 1}월 ${d.getDate()}일 ${['일','월','화','수','목','금','토'][d.getDay()]}요일`;
+  if (lang === 'ja') return `${d.getMonth() + 1}月${d.getDate()}日 ${['日','月','火','水','木','金','土'][d.getDay()]}曜日`;
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function renderPreview() {
+  const stage = $('stage');
+  const icon = $('appIcon').value || '🔔';
+  const app = $('appName').value || 'App';
+  const data = tr[curLang] || { title: '', body: '' };
+  const info = LANG_INFO[curLang];
+
+  const titleHtml = esc(data.title) || '<span style="opacity:.5">알림 제목</span>';
+  const bodyHtml = esc(data.body) || '<span style="opacity:.5">알림 본문이 여기에 표시됩니다</span>';
+
+  if (curDevice === 'android') {
+    stage.innerHTML = `
+      <div class="phone">
+        <div class="screen android">
+          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+          <div class="notif-area" style="margin-top:30px">
+            <div class="notif-android">
+              <div class="ahead">
+                <span class="aicon">${esc(icon)}</span>
+                <span class="aapp">${esc(app)}</span>
+                <span class="adot">·</span>
+                <span>${info.now}</span>
+              </div>
+              <div class="atitle">${titleHtml}</div>
+              <div class="abody">${bodyHtml}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
     return;
   }
-  ammo--;
-  fireCooldown = weaponDef.fireRate;
-  updateAmmo();
-  shootSound();
 
-  // muzzle flash
-  muzzle.intensity = 6;
-  muzzleSprite.material.opacity = 0.9;
-  muzzleSprite.rotation.z = Math.random() * Math.PI;
+  // iOS variants
+  const notif = `
+    <div class="notif-ios ${curDevice === 'ios-banner' ? 'notif-banner' : ''}">
+      <div class="nicon">${esc(icon)}</div>
+      <div class="ncontent">
+        <div class="nhead"><span class="napp">${esc(app)}</span><span>${info.now}</span></div>
+        <div class="ntitle">${titleHtml}</div>
+        <div class="nbody">${bodyHtml}</div>
+      </div>
+    </div>`;
 
-  // recoil kick
-  weapon.position.z = -0.42;
-  weapon.rotation.x = 0.08;
-  crosshair.classList.add('shoot');
-  setTimeout(() => crosshair.classList.remove('shoot'), 70);
-
-  // raycast from camera center
-  raycaster.setFromCamera(screenCenter, camera);
-  raycaster.far = weaponDef.range;
-  const meshes = enemies.map(e => e.mesh);
-  const hits = raycaster.intersectObjects(meshes, false);
-  if (hits.length) {
-    const hitMesh = hits[0].object;
-    const enemy = enemies.find(e => e.mesh === hitMesh);
-    if (enemy) {
-      enemy.hp -= weaponDef.damage;
-      enemy.hitFlash = 0.12;
-      showHitMarker();
-      hitSound();
-      // knockback spark
-      spawnSpark(hits[0].point);
-      if (enemy.hp <= 0) killEnemy(enemy);
-    }
-  }
-  if (ammo <= 0) startReload();
-}
-
-function showHitMarker() {
-  hitMarker.classList.add('show');
-  setTimeout(() => hitMarker.classList.remove('show'), 120);
-}
-
-// spark particles on hit
-const sparkPool = [];
-function spawnSpark(pos) {
-  const geo = new THREE.BufferGeometry();
-  const n = 8;
-  const arr = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) { arr[i*3]=pos.x; arr[i*3+1]=pos.y; arr[i*3+2]=pos.z; }
-  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xffd060, size: 0.12, transparent: true, opacity: 1 });
-  const pts = new THREE.Points(geo, mat);
-  const vels = [];
-  for (let i = 0; i < n; i++) vels.push(new THREE.Vector3((Math.random()-.5)*4,(Math.random()-.5)*4,(Math.random()-.5)*4));
-  scene.add(pts);
-  sparkPool.push({ pts, vels, life: 0.4, geo });
-}
-
-function killEnemy(enemy) {
-  scene.remove(enemy.mesh);
-  enemy.mesh.geometry.dispose?.();
-  enemy.mesh.material.dispose?.();
-  const idx = enemies.indexOf(enemy);
-  if (idx >= 0) enemies.splice(idx, 1);
-  score += 100 + wave * 10;
-  scoreVal.textContent = score;
-  enemiesRemaining--;
-  enemyVal.textContent = Math.max(0, enemiesRemaining);
-  killSound();
-  // death burst
-  for (let i = 0; i < 2; i++) spawnSpark(enemy.mesh.position);
-
-  if (enemiesRemaining <= 0 && enemies.length === 0) {
-    // bonus + next wave
-    score += 250;
-    scoreVal.textContent = score;
-    player.health = Math.min(player.maxHealth, player.health + 25);
-    updateHealth();
-    setTimeout(() => { if (state === State.PLAYING) startWave(wave + 1); }, 2200);
-    showWaveAnnounce('웨이브 클리어!', '+250 보너스 · 체력 회복');
+  if (curDevice === 'ios-banner') {
+    stage.innerHTML = `
+      <div class="phone">
+        <div class="ios-notch"></div>
+        <div class="screen ios">
+          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+          <div class="notif-area top">${notif}</div>
+        </div>
+      </div>`;
+  } else { // ios-lock
+    stage.innerHTML = `
+      <div class="phone">
+        <div class="ios-notch"></div>
+        <div class="screen ios">
+          <div class="statusbar"><span>${nowTime()}</span><span>📶 🔋</span></div>
+          <div class="lock-clock">
+            <div class="date">${dateLabel(curLang)}</div>
+            <div class="time">${nowTime()}</div>
+          </div>
+          <div class="notif-area" style="margin-top:40px">${notif}</div>
+        </div>
+      </div>`;
   }
 }
 
-function startReload() {
-  if (reloading || ammo === weaponDef.magSize) return;
-  reloading = true;
-  reloadTimer = weaponDef.reloadTime;
-  reloadHint.textContent = '재장전 중…';
-  reloadSound();
-}
-
-function updateAmmo() {
-  ammoVal.innerHTML = `${ammo}<span class="mag"> / ${weaponDef.magSize}</span>`;
-}
-function updateHealth() {
-  const pct = Math.max(0, player.health) / player.maxHealth * 100;
-  healthBar.style.width = pct + '%';
-  healthBar.style.background = pct > 50
-    ? 'linear-gradient(90deg,#60f0a0,#c8f060)'
-    : pct > 25 ? 'linear-gradient(90deg,#f0c060,#f0a060)'
-    : 'linear-gradient(90deg,#f06060,#f08060)';
-}
-
-function damagePlayer(dmg) {
-  player.health -= dmg;
-  updateHealth();
-  damageVignette.style.opacity = Math.min(0.9, dmg / 20);
-  setTimeout(() => damageVignette.style.opacity = 0, 120);
-  hurtSound();
-  if (player.health <= 0) gameOver();
-}
-
-// ---------- Movement & collision ----------
-const tmpBox = new THREE.Box3();
-const playerHalf = new THREE.Vector3(0.4, 0.9, 0.4);
-
-function resolveCollisions(pos) {
-  tmpBox.min.set(pos.x - playerHalf.x, pos.y - playerHalf.y, pos.z - playerHalf.z);
-  tmpBox.max.set(pos.x + playerHalf.x, pos.y + playerHalf.y, pos.z + playerHalf.z);
-  for (const c of colliders) {
-    if (!tmpBox.intersectsBox(c)) continue;
-    // compute minimal translation on X/Z only
-    const overlapX = Math.min(tmpBox.max.x - c.min.x, c.max.x - tmpBox.min.x);
-    const overlapZ = Math.min(tmpBox.max.z - c.min.z, c.max.z - tmpBox.min.z);
-    if (overlapX < overlapZ) {
-      const sign = (pos.x > (c.min.x + c.max.x) / 2) ? 1 : -1;
-      pos.x += sign * overlapX;
-    } else {
-      const sign = (pos.z > (c.min.z + c.max.z) / 2) ? 1 : -1;
-      pos.z += sign * overlapZ;
-    }
-    tmpBox.min.set(pos.x - playerHalf.x, pos.y - playerHalf.y, pos.z - playerHalf.z);
-    tmpBox.max.set(pos.x + playerHalf.x, pos.y + playerHalf.y, pos.z + playerHalf.z);
-  }
-  // arena bounds
-  const lim = ARENA - 1.2;
-  pos.x = Math.max(-lim, Math.min(lim, pos.x));
-  pos.z = Math.max(-lim, Math.min(lim, pos.z));
-}
-
-const forward = new THREE.Vector3();
-const right = new THREE.Vector3();
-const upVec = new THREE.Vector3(0, 1, 0);
-
-function updatePlayer(dt) {
-  const obj = controls.getObject();
-  // movement direction relative to camera yaw
-  camera.getWorldDirection(forward);
-  forward.y = 0; forward.normalize();
-  right.crossVectors(forward, upVec).normalize();
-
-  const running = keys['shift'] || touchRun;
-  const speed = player.speed * (running ? player.runMul : 1);
-  const dir = new THREE.Vector3();
-  const mx = (move.r - move.l) + touchMove.x;   // strafe (analog)
-  const my = (move.f - move.b) + touchMove.y;   // forward (analog)
-  dir.addScaledVector(right, mx);
-  dir.addScaledVector(forward, my);
-  if (dir.length() > 1) dir.normalize();         // cap diagonal / keep analog
-  dir.multiplyScalar(speed * dt);
-  obj.position.add(dir);
-
-  // gravity / jump
-  player.velY -= 22 * dt;
-  obj.position.y += player.velY * dt;
-  if (obj.position.y <= 1.7) {
-    obj.position.y = 1.7; player.velY = 0; player.onGround = true;
-  } else player.onGround = false;
-
-  resolveCollisions(obj.position);
-
-  // weapon bob
-  const moving = dir.lengthSq() > 0 && player.onGround;
-  if (moving) {
-    bobT += dt * (running ? 14 : 9);
-    weapon.position.y = -0.26 + Math.sin(bobT) * 0.012;
-    weapon.position.x = 0.28 + Math.cos(bobT * 0.5) * 0.008;
-  }
-  // recoil recovery
-  weapon.position.z += (-0.55 - weapon.position.z) * Math.min(1, dt * 12);
-  weapon.rotation.x += (0 - weapon.rotation.x) * Math.min(1, dt * 12);
-}
-let bobT = 0;
-
-function updateEnemies(dt) {
-  const p = controls.getObject().position;
-  for (const e of enemies) {
-    const m = e.mesh;
-    const dx = p.x - m.position.x, dz = p.z - m.position.z;
-    const dist = Math.hypot(dx, dz);
-    // move toward player
-    if (dist > 1.6) {
-      const vx = dx / dist * e.speed * dt;
-      const vz = dz / dist * e.speed * dt;
-      m.position.x += vx; m.position.z += vz;
-      // simple obstacle avoidance via collision push-out
-      pushEnemyOut(m.position);
-    }
-    // face player
-    m.rotation.y = Math.atan2(dx, dz);
-    // bob walk
-    m.position.y = 1.0 + Math.abs(Math.sin(performance.now() * 0.006 + m.id)) * 0.08;
-
-    // attack
-    e.atkCooldown -= dt;
-    if (dist < 2.2 && e.atkCooldown <= 0) {
-      damagePlayer(8 + wave * 1.2);
-      e.atkCooldown = 0.8;
-    }
-
-    // hit flash decay
-    if (e.hitFlash > 0) {
-      e.hitFlash -= dt;
-      m.material.emissive.setHex(0xffffff);
-      m.material.emissiveIntensity = 1;
-    } else {
-      m.material.emissive.setHex(0x300808);
-      m.material.emissiveIntensity = 1;
-      // hp tint
-      const k = e.hp / e.maxHp;
-      m.material.color.setRGB(0.94, 0.38 * k, 0.38 * k);
-    }
-  }
-}
-
-function pushEnemyOut(pos) {
-  for (const c of colliders) {
-    if (pos.x > c.min.x - 0.5 && pos.x < c.max.x + 0.5 &&
-        pos.z > c.min.z - 0.5 && pos.z < c.max.z + 0.5 &&
-        pos.y > c.min.y && pos.y < c.max.y) {
-      const ox = Math.min((c.max.x + 0.5) - pos.x, pos.x - (c.min.x - 0.5));
-      const oz = Math.min((c.max.z + 0.5) - pos.z, pos.z - (c.min.z - 0.5));
-      if (ox < oz) pos.x += (pos.x > (c.min.x+c.max.x)/2 ? ox : -ox);
-      else pos.z += (pos.z > (c.min.z+c.max.z)/2 ? oz : -oz);
-    }
-  }
-}
-
-function updateSparks(dt) {
-  for (let i = sparkPool.length - 1; i >= 0; i--) {
-    const s = sparkPool[i];
-    s.life -= dt;
-    const arr = s.geo.attributes.position.array;
-    for (let j = 0; j < s.vels.length; j++) {
-      arr[j*3]   += s.vels[j].x * dt;
-      arr[j*3+1] += s.vels[j].y * dt;
-      arr[j*3+2] += s.vels[j].z * dt;
-      s.vels[j].y -= 8 * dt;
-    }
-    s.geo.attributes.position.needsUpdate = true;
-    s.pts.material.opacity = Math.max(0, s.life / 0.4);
-    if (s.life <= 0) {
-      scene.remove(s.pts); s.geo.dispose(); s.pts.material.dispose();
-      sparkPool.splice(i, 1);
-    }
-  }
-}
-
-// ---------- Game flow ----------
-function resetGame() {
-  // clear enemies
-  for (const e of enemies) scene.remove(e.mesh);
-  enemies.length = 0;
-  for (const s of sparkPool) scene.remove(s.pts);
-  sparkPool.length = 0;
-  score = 0; wave = 0; enemiesRemaining = 0;
-  player.health = player.maxHealth; player.velY = 0;
-  ammo = weaponDef.magSize; reloading = false; reloadTimer = 0; fireCooldown = 0;
-  controls.getObject().position.set(0, 1.7, 0);
-  camera.rotation.set(0, 0, 0);
-  scoreVal.textContent = '0';
-  enemyVal.textContent = '0';
-  reloadHint.textContent = '';
-  updateAmmo(); updateHealth();
-}
-
-function startGame() {
-  resetGame();
-  state = State.PLAYING;
-  startScreen.classList.add('hidden');
-  gameOverScreen.classList.add('hidden');
-  pauseScreen.classList.add('hidden');
-  hud.style.display = 'block';
-  if (!isTouch) controls.lock();
-  audio(); // unlock audio context
-  if (actx && actx.state === 'suspended') actx.resume();
-  startWave(1);
-}
-
-function gameOver() {
-  state = State.OVER;
-  if (!isTouch) controls.unlock();
-  $('finalScore').textContent = `최종 점수: ${score}`;
-  $('finalWave').textContent = `도달 웨이브: ${wave}`;
-  gameOverScreen.classList.remove('hidden');
-  hud.style.display = 'none';
-}
-
-function pauseGame() {
-  if (state !== State.PLAYING) return;
-  state = State.PAUSED;
-  pauseScreen.classList.remove('hidden');
-}
-function resumeGame() {
-  if (state !== State.PAUSED) return;
-  pauseScreen.classList.add('hidden');
-  if (isTouch) state = State.PLAYING;
-  else controls.lock();
-}
-
-// ---------- Input ----------
-$('startBtn').addEventListener('click', startGame);
-$('restartBtn').addEventListener('click', startGame);
-$('resumeBtn').addEventListener('click', resumeGame);
-
-controls.addEventListener('lock', () => {
-  if (state === State.PAUSED) state = State.PLAYING;
+// ---------- tab handlers ----------
+$('deviceTabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  curDevice = t.dataset.device;
+  $('deviceTabs').querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  renderPreview();
 });
-controls.addEventListener('unlock', () => {
-  if (!isTouch && state === State.PLAYING) pauseGame();
+$('langTabs').addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (!t) return;
+  curLang = t.dataset.lang;
+  $('langTabs').querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  renderPreview();
 });
 
-document.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  keys[k] = true;
-  if (k === 'w') move.f = 1;
-  if (k === 's') move.b = 1;
-  if (k === 'a') move.l = 1;
-  if (k === 'd') move.r = 1;
-  if (k === 'r') startReload();
-  if (k === ' ' && player.onGround && state === State.PLAYING) {
-    player.velY = 8.5; player.onGround = false;
-  }
-});
-document.addEventListener('keyup', e => {
-  const k = e.key.toLowerCase();
-  keys[k] = false;
-  if (k === 'w') move.f = 0;
-  if (k === 's') move.b = 0;
-  if (k === 'a') move.l = 0;
-  if (k === 'd') move.r = 0;
-});
+// ---------- live updates ----------
+$('translateBtn').addEventListener('click', doTranslate);
+['appIcon', 'appName'].forEach(id => $(id).addEventListener('input', () => { renderPreview(); save(); }));
+$('srcTitle').addEventListener('input', () => { $('titleCount').textContent = $('srcTitle').value.length + '자'; save(); });
+$('srcBody').addEventListener('input', () => { $('bodyCount').textContent = $('srcBody').value.length + '자'; save(); });
+['srcLang', 'apiEmail'].forEach(id => $(id).addEventListener('change', save));
 
-let mouseDown = false;
-document.addEventListener('mousedown', e => {
-  if (e.button === 0 && state === State.PLAYING && controls.isLocked) mouseDown = true;
-});
-document.addEventListener('mouseup', e => { if (e.button === 0) mouseDown = false; });
-
-// ---------- Touch input (mobile) ----------
-// primary pointer is coarse (phone/tablet) → touch mode; mouse laptops stay on keyboard/mouse
-const isTouch = matchMedia('(pointer: coarse)').matches && navigator.maxTouchPoints > 0;
-const touchMove = { x: 0, y: 0 };   // analog strafe / forward (-1..1)
-let touchRun = false;
-let touchFire = false;
-
-// manual look (used when pointer lock is unavailable on touch devices)
-const lookEuler = new THREE.Euler(0, 0, 0, 'YXZ');
-const LOOK_SENS = 0.0042;
-function applyLook(dx, dy) {
-  lookEuler.setFromQuaternion(camera.quaternion);
-  lookEuler.y -= dx * LOOK_SENS;
-  lookEuler.x -= dy * LOOK_SENS;
-  const lim = Math.PI / 2 - 0.01;
-  lookEuler.x = Math.max(-lim, Math.min(lim, lookEuler.x));
-  camera.quaternion.setFromEuler(lookEuler);
-}
-
-if (isTouch) {
-  const joystick = $('joystick');
-  const knob = $('joystickKnob');
-  const JOY_MAX = 50;
-  let joyId = null, lookId = null, lookPX = 0, lookPY = 0;
-  const joyBase = { x: 0, y: 0 };
-
-  const inLeftZone = x => x < window.innerWidth * 0.45;
-
-  document.addEventListener('touchstart', e => {
-    if (state !== State.PLAYING) return;
-    for (const t of e.changedTouches) {
-      if (joyId === null && inLeftZone(t.clientX)) {
-        joyId = t.identifier;
-        joyBase.x = t.clientX; joyBase.y = t.clientY;
-        joystick.style.left = t.clientX + 'px';
-        joystick.style.top = t.clientY + 'px';
-        joystick.classList.add('active');
-        knob.style.transform = 'translate(0,0)';
-      } else if (lookId === null) {
-        lookId = t.identifier; lookPX = t.clientX; lookPY = t.clientY;
-      }
-    }
-  }, { passive: false });
-
-  document.addEventListener('touchmove', e => {
-    for (const t of e.changedTouches) {
-      if (t.identifier === joyId) {
-        let dx = t.clientX - joyBase.x, dy = t.clientY - joyBase.y;
-        const mag = Math.hypot(dx, dy);
-        if (mag > JOY_MAX) { dx = dx / mag * JOY_MAX; dy = dy / mag * JOY_MAX; }
-        knob.style.transform = `translate(${dx}px,${dy}px)`;
-        touchMove.x = dx / JOY_MAX;
-        touchMove.y = -dy / JOY_MAX;   // drag up = move forward
-        touchRun = (mag / JOY_MAX) > 0.85;
-      } else if (t.identifier === lookId) {
-        applyLook(t.clientX - lookPX, t.clientY - lookPY);
-        lookPX = t.clientX; lookPY = t.clientY;
-      }
-    }
-    if (state === State.PLAYING) e.preventDefault();
-  }, { passive: false });
-
-  function endTouch(e) {
-    for (const t of e.changedTouches) {
-      if (t.identifier === joyId) {
-        joyId = null; touchMove.x = 0; touchMove.y = 0; touchRun = false;
-        joystick.classList.remove('active');
-      }
-      if (t.identifier === lookId) lookId = null;
-    }
-  }
-  document.addEventListener('touchend', endTouch);
-  document.addEventListener('touchcancel', endTouch);
-
-  // action buttons — use touchstart/end so they don't grab the look drag
-  const bind = (el, onDown, onUp) => {
-    el.addEventListener('touchstart', e => {
-      e.preventDefault(); e.stopPropagation(); el.classList.add('pressed'); onDown && onDown();
-    }, { passive: false });
-    el.addEventListener('touchend', e => {
-      e.preventDefault(); e.stopPropagation(); el.classList.remove('pressed'); onUp && onUp();
-    }, { passive: false });
-    el.addEventListener('touchcancel', () => { el.classList.remove('pressed'); onUp && onUp(); });
-  };
-
-  bind($('btnFire'), () => { touchFire = true; }, () => { touchFire = false; });
-  bind($('btnReload'), () => startReload());
-  bind($('btnJump'), () => {
-    if (player.onGround && state === State.PLAYING) { player.velY = 8.5; player.onGround = false; }
-  });
-  const btnRun = $('btnRun');
-  bind(btnRun, () => { touchRun = true; btnRun.classList.add('on'); },
-               () => { /* run latches via joystick; toggle off on release */ btnRun.classList.remove('on'); });
-  bind($('btnPause'), () => { if (state === State.PLAYING) pauseGame(); });
-}
-
-// ---------- Resize ----------
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-// ---------- Loop ----------
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(0.05, clock.getDelta());
-
-  // decay muzzle flash
-  if (muzzle.intensity > 0) muzzle.intensity = Math.max(0, muzzle.intensity - dt * 40);
-  if (muzzleSprite.material.opacity > 0) muzzleSprite.material.opacity = Math.max(0, muzzleSprite.material.opacity - dt * 8);
-
-  if (state === State.PLAYING) {
-    fireCooldown = Math.max(0, fireCooldown - dt);
-    if (reloading) {
-      reloadTimer -= dt;
-      if (reloadTimer <= 0) {
-        reloading = false; ammo = weaponDef.magSize;
-        reloadHint.textContent = ''; updateAmmo();
-      }
-    }
-    if (mouseDown || touchFire) shoot();
-
-    updatePlayer(dt);
-    updateEnemies(dt);
-    updateSparks(dt);
-  }
-
-  renderer.render(scene, camera);
-}
-
-// ---------- Boot ----------
-loadingEl.style.display = 'none';
-startScreen.classList.remove('hidden');
-updateAmmo();
-updateHealth();
-
-// adapt start screen for touch devices
-if (isTouch) {
-  document.body.classList.add('touch');
-  const controlsEl = document.querySelector('#startScreen .controls');
-  if (controlsEl) controlsEl.innerHTML = `
-    <span><span class="key">왼쪽 드래그</span></span><span><b>이동 (꾹=달리기)</b></span>
-    <span><span class="key">오른쪽 드래그</span></span><span><b>조준</b></span>
-    <span><span class="key">발사</span></span><span><b>사격(누르고)</b></span>
-    <span><span class="key">⟳</span></span><span><b>재장전</b></span>
-    <span><span class="key">⤒</span></span><span><b>점프</b></span>
-    <span><span class="key">❚❚</span></span><span><b>일시정지</b></span>`;
-  $('pauseHint').textContent = '버튼을 눌러 작전을 개시하세요.';
-  $('startBtn').textContent = '작전 개시 ▶ (전체화면)';
-  // request fullscreen + landscape suggestion on start for a better mobile experience
-  $('startBtn').addEventListener('click', () => {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-    if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
-  });
-}
-
-animate();
-
+// ---------- boot ----------
+load();
+$('titleCount').textContent = $('srcTitle').value.length + '자';
+$('bodyCount').textContent = $('srcBody').value.length + '자';
+curLang = $('srcLang').value;
+$('langTabs').querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.lang === curLang));
+renderResults();
+renderPreview();
 </script>
 </body>
 </html>
